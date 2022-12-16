@@ -1,0 +1,8 @@
+*.d 
+*.o
+*.mk
+*.list
+*.map
+*.elf
+Debug/
+gittoken.txt
