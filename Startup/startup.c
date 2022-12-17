@@ -17,7 +17,7 @@
 extern void main( void );
 
 // prevent compiler warnings
-void SysInit( void );
+extern void SysInit( void );
 
 static void StartUp_Debounce ( void )
 {
@@ -59,6 +59,7 @@ void Fill_Bss ( void ){
 void Reset_Handler( void ) {
 
 	/* Copy Static Initialized Data to RAM */
+
 	Copy_Data();
 	/* Fill BSS with Zero */
 	Fill_Bss();
@@ -69,8 +70,6 @@ void Reset_Handler( void ) {
 	StartUp_Debounce();
 	/*SysInit*/
 	SysInit();
-
-
 	/*Jump to main() */
 	main();
 
@@ -84,6 +83,9 @@ void Reset_Handler( void ) {
 void Default_Handler ( void ) {
 	while(1);
 }
+
+
+
 
 /* Weak IRQ Names */
 
@@ -136,26 +138,10 @@ void __attribute__((weak , alias("Default_Handler"))) SPI2_IRQHandler ( void ) ;
 void __attribute__((weak , alias("Default_Handler"))) USART1_IRQHandler ( void ) ;
 void __attribute__((weak , alias("Default_Handler"))) USART2_IRQHandler ( void ) ;
 void __attribute__((weak , alias("Default_Handler"))) USART3_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler")))  EXTI15_10_IRQHandler ( void ) ;
+void __attribute__((weak , alias("Default_Handler"))) EXTI15_10_IRQHandler ( void ) ;
 void __attribute__((weak , alias("Default_Handler"))) RTCAlarm_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) TIM8_BRK_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) TIM8_UP_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) TIM8_TRG_COM_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) TIM8_CC_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) ADC3_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) FSMC_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) SDIO_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) TIM5_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) SPI3_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) UART4_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) UART5_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) TIM6_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) TIM7_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) DMA2_Channel1_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) DMA2_Channel2_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) DMA2_Channel3_IRQHandler ( void ) ;
-void __attribute__((weak , alias("Default_Handler"))) DMA2_Channel4_5_IRQHandler ( void ) ;
-
+void __attribute__((weak , alias("Default_Handler"))) USBWakeUp_IRQHandler ( void ) ;
+void __attribute__((weak , alias("Default_Handler"))) BootRAM ( void ) ;
 /* Vector table with Vector table section */
 
 void (*isr_vectors[]) ( void ) __attribute__((section(".isr_vector_table")))    = {
@@ -218,24 +204,15 @@ void (*isr_vectors[]) ( void ) __attribute__((section(".isr_vector_table")))    
  USART3_IRQHandler,          /* USART3 global interrupt                          */
  EXTI15_10_IRQHandler,       /* EXTI Line[15:10] interrupts                      */
  RTCAlarm_IRQHandler,        /* RTC Alarms through EXTI line interrupt           */
- (void (*)( void ) )0 ,                           /* Reserved                                         */
- TIM8_BRK_IRQHandler,        /* TIM8 Break interrupt                             */
- TIM8_UP_IRQHandler,         /* TIM8 Update interrupt                            */
- TIM8_TRG_COM_IRQHandler,    /* TIM8 Trigger and Commutation interrupts          */
- TIM8_CC_IRQHandler,         /* TIM8 Capture Compare interrupt                   */
- ADC3_IRQHandler,            /* ADC3 global interrupt                            */
- FSMC_IRQHandler,            /* FSMC global interrupt                            */
- SDIO_IRQHandler,            /* SDIO global interrupt                            */
- TIM5_IRQHandler,            /* TIM5 global interrupt                            */
- SPI3_IRQHandler,            /* SPI3 global interrupt                            */
- UART4_IRQHandler,           /* UART4 global interrupt                           */
- UART5_IRQHandler,           /* UART5 global interrupt                           */
- TIM6_IRQHandler,            /* TIM6 global interrupt                            */
- TIM7_IRQHandler,            /* TIM7 global interrupt                            */
- DMA2_Channel1_IRQHandler,   /* DMA2 Channel1 global interrupt                   */
- DMA2_Channel2_IRQHandler,   /* DMA2 Channel2 global interrupt                   */
- DMA2_Channel3_IRQHandler,   /* DMA2 Channel3 global interrupt                   */
- DMA2_Channel4_5_IRQHandler			/* DMA2 Channel4 and DMA2 Channel5 global interrupt */
+ USBWakeUp_IRQHandler ,      /* USB Wakeup Handler */
+ (void (*)( void ) )0,
+ (void (*)( void ) )0,
+ (void (*)( void ) )0,
+ (void (*)( void ) )0,
+ (void (*)( void ) )0,
+ (void (*)( void ) )0,
+ (void (*)( void ) )0,
+ BootRAM
 };
 
 

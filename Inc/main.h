@@ -14,5 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "src/lwGPIO.h"
+#include "src/lwUSB.h"
+#include "src/lwUSART.h"
+#include "lwCommon.h"
 
 #endif /* MAIN_H_ */

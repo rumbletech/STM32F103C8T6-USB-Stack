@@ -41,7 +41,7 @@ LW_INLINE err_t lwGPIO_EnableGPIO ( GPIO_TypeDef* lwgpio  ){
 		RCC->APB2ENR |= RCC_APB2ENR_IOPEEN_Msk ;
 		break;
 	default :
-		LW_DEBUG("LW_DEBUG: Invalid_Param" , ERR_PARAM ) ;
+		LW_DEBUG(ERR_PARAM  , "LW_DEBUG: Invalid_Param" ) ;
 		return ERR_PARAM ;
 	}
 	return ERR_OK ;
@@ -50,7 +50,7 @@ LW_INLINE err_t lwGPIO_EnableGPIO ( GPIO_TypeDef* lwgpio  ){
 
 LW_INLINE err_t lwGPIO_WritePort( GPIO_TypeDef* lwgpio , uint16_t portv  ){
 #if ( LW_ASSERT_ENABLE == 1U )
-	LW_ASSERT( portv&0xFFFF == 0)
+	LW_ASSERT( portv&0xFFFF == 0);
 	ASSERT_GPIO_TYPDEF(lwgpio);
 #endif
 	lwgpio->ODR = portv ;
@@ -99,10 +99,10 @@ LW_INLINE int8_t lwGPIO_ReadPin( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_
 err_t lwGPIO_Config( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_cs ){
 #if ( LW_ASSERT_ENABLE == 1U )
 	LW_ASSERT( lwgpio_cs );
-	LW_ASSERT( lwgpio_cs->mode <= E_LWGPIO_MODE_RNG)
-	LW_ASSERT( lwgpio_cs->conf <= E_LWGPIO_CONF_RNG)
-	LW_ASSERT( lwgpio_cs->pin_i <= 15u )
-	LW_ASSERT( lwgpio_cs->lock <= 1u )
+	LW_ASSERT( lwgpio_cs->mode <= E_LWGPIO_MODE_RNG);
+	LW_ASSERT( lwgpio_cs->conf <= E_LWGPIO_CONF_RNG);
+	LW_ASSERT( lwgpio_cs->pin_i <= 15u );
+	LW_ASSERT( lwgpio_cs->lock <= 1u );
 	ASSERT_GPIO_TYPDEF(lwgpio);
 #endif
 

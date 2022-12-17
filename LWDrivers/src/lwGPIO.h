@@ -17,13 +17,13 @@
 
 typedef enum {
 
-	e_lwGPIO_conf_analog    = 0b00 ,
-	e_lwGPIO_conf_floating  = 0b01 ,
-	e_lwGPIO_conf_input     = 0b10 ,
-	e_lwGPIO_conf_PP        = 0b00 ,
-	e_lwGPIO_conf_OD        = 0b01 ,
-	e_lwGPIO_conf_AF_PP     = 0B10 ,
-	e_lwGPIO_conf_AF_OD     = 0B11 ,
+	e_lwGPIO_conf_analog     = 0b00 ,
+	e_lwGPIO_conf_floating   = 0b01 ,
+	e_lwGPIO_conf_input_pupd = 0b10 ,
+	e_lwGPIO_conf_PP         = 0b00 ,
+	e_lwGPIO_conf_OD         = 0b01 ,
+	e_lwGPIO_conf_AF_PP      = 0B10 ,
+	e_lwGPIO_conf_AF_OD      = 0B11 ,
 
 } e_lwGPIO_conf ;
 
@@ -33,7 +33,7 @@ typedef enum {
 	e_lwGPIO_mode_input       = 0b00 ,
 	e_lwGPIO_mode_output_10M  = 0b01 ,
 	e_lwGPIO_mode_output_2M   = 0b10 ,
-	e_lwGPIO_mode_output_50M  = 0b00 ,
+	e_lwGPIO_mode_output_50M  = 0b11 ,
 
 } e_lwGPIO_mode ;
 
