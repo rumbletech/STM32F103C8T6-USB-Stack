@@ -13,8 +13,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-
-
+#include "src/lwGPIO.h"
 
 #endif /* MAIN_H_ */

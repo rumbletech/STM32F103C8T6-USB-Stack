@@ -31,7 +31,11 @@ static uint32_t usb_clk ;
 
 
 
-
+s_lwGPIO_Config pc13 = { .conf  = e_lwGPIO_conf_PP ,
+						 .mode  = e_lwGPIO_mode_output_10M ,
+						 .pin_i = 13u ,
+						 .lock  = 0u
+};
 
 static void FLASH_Init( void )
 {
@@ -59,6 +63,8 @@ static void RCC_Init( void )
 
 
 	RCC->CR |= PLL_SWITCH  ; // SWITCH TO PLL
+
+
 	sys_clk = PLL_MULL_FACTOR * HSE_FREQ ;
 	apb1_clk = sys_clk/2 ;
 	apb2_clk = sys_clk/1 ;
@@ -69,14 +75,21 @@ static void RCC_Init( void )
 }
 
 
+void GPIO_Init( void )
+{
 
+
+	lwGPIO_EnableGPIO(GPIOC);
+	lwGPIO_Config( GPIOC , &pc13 );
+	lwGPIO_ResetPin(GPIOC, &pc13 );
+}
 
 void SysInit( void )
 {
 
 	FLASH_Init();
 	RCC_Init();
-
+	GPIO_Init();
 
 
 
