@@ -6,3 +6,5 @@
 *.elf
 Debug/
 gittoken.txt
+ssh_key
+ssh_key.pub
