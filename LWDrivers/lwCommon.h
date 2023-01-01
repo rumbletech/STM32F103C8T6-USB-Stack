@@ -9,17 +9,26 @@
 #define LWCOMMON_H_
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include <stm32f103xb.h>
 
 /*********************************************************-- OPTIONS --****************************
  * ***********************************************************************************************
  */
-#define LW_ASSERT_ENABLE 0u
+#define LW_ASSERT_ENABLE 1u
 #define LW_ASSERT_RETURN 0u
-#define LW_DEBUG_ENABLE 0u
-#define LW_ERR_RETURN 0u
+#define LW_DEBUG_ENABLE 1u
 #define LW_INLINE_ENABLE 1u
 #define LW_PRINTF_BUFFER_LEN 200u
+#define LW_DEBUG_PORT USART2
+#define LW_PRIO_GROUP 3UL
+#define MEM_ALIGNNMENT 4u
+#define MEM_HEAP_SIZE  8192u
+
+#define MEM_DUMP_FULL_MEMORY 0u
+#define MEM_DUMP_FULL_BK 0u
+
 /* Processor Options */
 
 #define CPU_FREQ 72000000UL
@@ -53,31 +62,21 @@ struct heap_s{
 #endif
 
 
-#if LW_ERR_RETURN == 0U
-typedef void err_t ;
-#else
-typedef int32_t err_t ;
-#endif
-/*************************************** ERR CODES ********************************************/
-#if LW_ERR_RETURN == 0U
-#define ERR_OK
-#define ERR_PARAM
-#define ERR_FAULT
-#define ERR_ASSERT
-#define ERR_DEBUG
 
-#else
+typedef int32_t err_t ;
+
+/*************************************** ERR CODES ********************************************/
 #define ERR_OK INT32T_CAST(0U)
 #define ERR_PARAM INT32T_CAST(-1)
 #define ERR_FAULT INT32T_CAST(-2)
 #define ERR_ASSERT INT32T_CAST(-3)
-
-#endif
+#define ERR_DEBUG INT32T_CAST(-4)
+#define ERR_NULL  INT32T_CAST(-5)
 /******************************************** DEBUG **********************************************/
 #if LW_DEBUG_ENABLE == 0u
 #define LW_DEBUG(msg,...)
 #else
-#define LW_DEBUG(msg,...)   lw_printf( "Error Code %d \r\n" msg  , ##__VA_ARGS__)
+#define LW_DEBUG(...)   (lw_printf( __VA_ARGS__))
 #endif
 /******************************************** ASSERT *********************************************/
 #if LW_ASSERT_ENABLE == 0U
@@ -85,9 +84,9 @@ typedef int32_t err_t ;
 #else
 
 #if LW_ASSERT_RETURN == 0U
-#define LW_ASSERT(CONDITION) ((CONDITION)?((void*)(0)):(LW_DEBUG("Assert_Fail" ,ERR_ASSERT )) )
+#define LW_ASSERT(CONDITION) ( (CONDITION) ? ((void)(0)) : (LW_DEBUG("\r\nAssert_Fail at %s at Line(%d)" , __FILE__ ,  __LINE__ ))  )
 #else
-#define LW_ASSERT(CONDITION) ((CONDITION)?((void*)(0)):((LW_DEBUG("Assert_Fail" ,ERR_ASSERT ));return ERR_ASSERT;))
+#define LW_ASSERT(CONDITION) ((CONDITION)?((void*)(0)):((LW_DEBUG("\r\nAssert_Fail at %s at Line(%d)", __FILE__, __LINE__ ));return ERR_ASSERT;))
 #endif
 
 
@@ -95,7 +94,7 @@ typedef int32_t err_t ;
 
 /******************************************* Externs ******************************************************/
 
-
+extern struct heap_s gheap_s ;
 
 
 
@@ -104,8 +103,21 @@ typedef int32_t err_t ;
 #define INT32T_CAST(ARG)  ((int32_t)ARG)
 #define USE(X) do{ (void)X; } while(0)
 #define DONT_CARE 0u
+#define IS_ALIGNED(X) (!(UINT32T_CAST(X)%4))
+#define malloc(SIZE) (heap_malloc( &gheap_s , SIZE))
+#define free(PTR)    (heap_free(&gheap_s , PTR))
+#define dump_heap()  (heap_dump(&gheap_s))
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 
-
+#define BYTE_TO_BINARY(byte)  \
+  (byte & 0x01 ? '1' : '0'), \
+  (byte & 0x02 ? '1' : '0'), \
+  (byte & 0x04 ? '1' : '0'), \
+  (byte & 0x08 ? '1' : '0'), \
+  (byte & 0x10 ? '1' : '0'), \
+  (byte & 0x20 ? '1' : '0'), \
+  (byte & 0x40 ? '1' : '0'), \
+  (byte & 0x80 ? '1' : '0')
 
 
 /********************************** LOOP TIMEGEN *****************************/
@@ -148,10 +160,17 @@ int lw_printf (char * str, ...);
 
 /* Initializes CLOCK VALS */
 void lw_Init( uint32_t SYS_clk , uint32_t APB1_clk , uint32_t APB2_clk , uint32_t USB_clk );
+
 uint32_t lw_getSYSClk( void );
 uint32_t lw_getAPB1Clk( void );
 uint32_t lw_getAPB2Clk( void );
 uint32_t lw_getUSBClk( void );
+
+err_t init_heap ( struct heap_s* mem_heap  , uint8_t * heap  , uint8_t* bk , size_t hp_sz , uint8_t align );
+void* heap_malloc ( struct heap_s * mem_heap , size_t sz ) ;
+err_t  heap_free ( struct heap_s * mem_heap , void* ptr );
+int32_t heap_dump ( struct heap_s * mem_heap  ) ;
+
 
 
 #define lw_waitfor_ns(timex) lw_waitfor_cycles(LOOP_TIME_NS*timex)

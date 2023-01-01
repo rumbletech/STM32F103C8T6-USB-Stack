@@ -4,20 +4,12 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include "src/lwUSART.h"
 
 
 
-#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 
-#define BYTE_TO_BINARY(byte)  \
-  (byte & 0x01 ? '1' : '0'), \
-  (byte & 0x02 ? '1' : '0'), \
-  (byte & 0x04 ? '1' : '0'), \
-  (byte & 0x08 ? '1' : '0'), \
-  (byte & 0x10 ? '1' : '0'), \
-  (byte & 0x20 ? '1' : '0'), \
-  (byte & 0x40 ? '1' : '0'), \
-  (byte & 0x80 ? '1' : '0')
+#define MEM_BK_SIZE (MEM_HEAP_SIZE/MEM_ALIGNNMENT/8)
 
 
 
@@ -28,6 +20,9 @@ static uint32_t sys_clk ;
 static uint32_t apb1_clk ;
 static uint32_t apb2_clk ;
 static uint32_t usb_clk ;
+static uint8_t gheap[MEM_HEAP_SIZE];
+static uint8_t gheap_bk[MEM_BK_SIZE];
+struct heap_s gheap_s ;
 
 uint32_t lw_getSYSClk( void ){
 	return sys_clk ;
@@ -47,9 +42,12 @@ uint32_t lw_getUSBClk( void ){
 void lw_Init( uint32_t SYS_clk , uint32_t APB1_clk , uint32_t APB2_clk , uint32_t USB_clk )
 {
 	sys_clk  = SYS_clk  ;
-	APB1_clk = apb1_clk ;
-	APB2_clk = apb2_clk ;
-	USB_clk  = usb_clk ;
+	apb1_clk = APB1_clk ;
+	apb2_clk = APB2_clk ;
+	usb_clk  = USB_clk ;
+
+	init_heap(&gheap_s, gheap, gheap_bk, MEM_HEAP_SIZE , MEM_ALIGNNMENT);
+
 
 }
 void __attribute__((naked)) lw_waitfor( uint32_t time_ns){
@@ -81,9 +79,9 @@ void __attribute__((naked)) lw_waitfor_cycles ( uint32_t cycles )
 }
 
 
-#define MEM_ALGINMENT 4u
-#define MEM_SIZE 2048u
-#define MEM_BK_SIZE (MEM_SIZE/8)
+
+
+
 
 
 
@@ -105,11 +103,11 @@ err_t init_heap ( struct heap_s* mem_heap  , uint8_t * heap  , uint8_t* bk , siz
     mem_heap->heap_align = align ;
 
     /* Initialize Memory Keeping */
-    for ( int i = 0 ; i < hp_sz/8 ; i++ ) {
+    for ( int i = 0 ; i < hp_sz/align/8 ; i++ ) {
         bk[i] = 0 ;
     }
     /* Initialize heap to 0u */
-    for ( int i = 0 ; i < hp_sz*align ; i++ ) {
+    for ( int i = 0 ; i < hp_sz ; i++ ) {
         heap[i] = 0 ;
     }
 
@@ -123,17 +121,21 @@ void* heap_malloc ( struct heap_s * mem_heap , size_t sz ) {
         return NULL ;
     }
 
-    if ( sz == 1 )
-        sz++;
+    if ( sz < mem_heap->heap_align  ){
+        sz = mem_heap->heap_align ;
+    }
+
+    sz+= mem_heap->heap_align ;
 
     int32_t begin_i = -1 ;
     int32_t end_i = -1 ;
     uint8_t * bk = mem_heap->bk ;
     uint32_t free_chunk_sz =  0 ;
+    uint32_t bk_range =  mem_heap->mem_sz/(8u*mem_heap->heap_align) ;
     uint8_t blockisf = 1 ;
 
     HEAP_LOCK();
-    for ( int i = 0 ; i < mem_heap->mem_sz/8 && free_chunk_sz < sz; i++ ) {
+    for ( int i = 0 ; i < bk_range && free_chunk_sz < sz; i++ ) {
         uint8_t bk_val = bk[i] ;
         for ( int j = 0 ; j < 8 ; j++ , bk_val>>=1 ) {
             if ( (bk_val&1) == 0 && blockisf ){
@@ -141,7 +143,7 @@ void* heap_malloc ( struct heap_s * mem_heap , size_t sz ) {
                     begin_i = i*8u + j ;
                     free_chunk_sz = 0 ;
                 }
-                free_chunk_sz++;
+                free_chunk_sz+= mem_heap->heap_align ;
 
                 if ( free_chunk_sz >= sz ){
                     end_i = i*8u + j ;
@@ -166,38 +168,49 @@ void* heap_malloc ( struct heap_s * mem_heap , size_t sz ) {
         return NULL ;
     }
     /* Debug*/
-    LW_DEBUG("\r\n   --- Alloc with Begin Index %d  --- \r\n " , begin_i ) ;
-    LW_DEBUG("\r\n   --- Alloc with Begin Index %d  --- \r\n " , end_i ) ;
-
-    return (void*)&mem_heap->heap[begin_i*mem_heap->heap_align] ;
+    //todo remove
+//    LW_DEBUG("\r\n   --- Alloc with Begin Index %d  ---" , begin_i ) ;
+//    LW_DEBUG("\r\n   --- Alloc with Begin Index %d  ---" , end_i ) ;
+    uint32_t p = (uint32_t)(&mem_heap->heap[(begin_i+1)*mem_heap->heap_align]) ;
+    p &= ~( mem_heap->heap_align -1 );
+    return (void*)p ;
 
 }
 
 err_t  heap_free ( struct heap_s * mem_heap , void* ptr ) {
 
-    /* Get Index by ptr */
-    uint32_t ptr_i = ((uint32_t)ptr - (uint32_t)mem_heap->heap)/mem_heap->heap_align ;
-
-    if ( ptr_i >= mem_heap->mem_sz || ptr_i < 0 ){
+    if ( (uint32_t)ptr < (uint32_t)&mem_heap->heap[0] ||
+    	 (uint32_t)ptr > (uint32_t)&mem_heap->heap[mem_heap->free_mem_sz-1] ){
         return ERR_FAULT ;
     }
+    /* Get Index by ptr */
+    uint32_t ptr_i = (((uint32_t)ptr - (uint32_t)mem_heap->heap)/mem_heap->heap_align)-1 ;
+    uint32_t bk_range =  mem_heap->mem_sz/(8u*mem_heap->heap_align) ;
 
     HEAP_LOCK();
     uint32_t free_chunk_sz = 0u ;
     uint8_t * bk = mem_heap->bk ;
 
+    /* Ptr is not allocated */
+    if ( !(bk[ptr_i/8]&( 1 << ptr_i%8 )) ){
+    	return ERR_FAULT ;
+    }
+
     /* Clear Begining of the region */
     bk[ptr_i/8] &= ~( 1 << ptr_i%8 ) ;
-    free_chunk_sz++ ;
+    free_chunk_sz+= mem_heap->heap_align;
+
     /* Find end of the region and unlock it */
-    for ( int i = ptr_i ; i < mem_heap->mem_sz ; i++ ) {
+    for ( int i = ptr_i+1 ; i < bk_range ; i++ ) {
          if ( bk[i/8]&( 1 << i%8 ) ){
              bk[i/8]&= ~( 1 << i%8 ) ;
              //break out of the loop
-             i = mem_heap->mem_sz ;
+             i = bk_range ;
          }
-         free_chunk_sz++;
+         free_chunk_sz+= mem_heap->heap_align;
     }
+
+
 
     mem_heap->free_mem_sz += free_chunk_sz ;
     HEAP_UNLOCK();
@@ -212,42 +225,48 @@ int32_t heap_dump ( struct heap_s * mem_heap  ) {
 
     uint8_t * bk = mem_heap->bk ;
     uint8_t * heap = mem_heap->heap ;
+    uint32_t bk_range =  mem_heap->mem_sz/(8u*mem_heap->heap_align) ;
+
+    LW_DEBUG("\r\n------------ Heap Start Address= 0x%x ---------" , (uint32_t)mem_heap->heap ) ;
+    LW_DEBUG("\r\n------------ Heap End Address= 0x%x   ---------" , (uint32_t)(mem_heap->heap)+mem_heap->mem_sz) ;
+    LW_DEBUG("\r\n------------ Total Memory in bytes = %d -----" , mem_heap->mem_sz ) ;
+    LW_DEBUG("\r\n------------ Memory Alignment = %d ----------" , mem_heap->heap_align ) ;
+    LW_DEBUG("\r\n------------ Free Memory = %d ---------------" , mem_heap->free_mem_sz ) ;
 
 
-    LW_DEBUG("\r\n------------ Heap Start Address= %x ---------\r\n" , (uint32_t)mem_heap->heap ) ;
-    LW_DEBUG("\r\n------------ Heap End Address= %x ---------\r\n" , (uint32_t)(mem_heap->heap)+mem_heap->mem_sz*mem_heap->heap_align-1 ) ;
-    LW_DEBUG("\r\n------------ Total Memory in bytes = %d ---------\r\n" , mem_heap->mem_sz * mem_heap->heap_align ) ;
-    LW_DEBUG("\r\n------------ Memory Alignment = %d ---------\r\n" , mem_heap->heap_align ) ;
-    LW_DEBUG("\r\n------------ Total Memory in units = %d ---------\r\n" , mem_heap->mem_sz ) ;
-    LW_DEBUG("\r\n------------ Free Memory = %d ---------\r\n" , mem_heap->free_mem_sz ) ;
+#if defined(MEM_DUMP_FULL_MEMORY) && (MEM_DUMP_FULL_MEMORY != 0 )
     LW_DEBUG("\r\n------------Memory Dump --------------\r\n");
-    for ( int i =  0 ; i < mem_heap->mem_sz * mem_heap->heap_align ; i++ ) {
-        LW_DEBUG(" %#02x " , heap[i] ) ;
+    for ( int i =  0 ; i < mem_heap->mem_sz ; i++ ) {
+        LW_DEBUG(" 0x%x " , heap[i] ) ;
         if ( i%10 == 0 ) {
             LW_DEBUG("\r\n");
         }
     }
+#endif
+#if defined(MEM_DUMP_FULL_BK) && (MEM_DUMP_FULL_BK != 0 )
     LW_DEBUG("\r\n------------Book Keeping Dump--------------\r\n");
-    for ( int i = 0 ; i < mem_heap->mem_sz/8 ; i++ ) {
+    for ( int i = 0 ; i < bk_range ; i++ ) {
         LW_DEBUG(""BYTE_TO_BINARY_PATTERN ,  BYTE_TO_BINARY(bk[i]) ) ;
     }
+
+#endif
 
     uint32_t chunk_i = 0 ;
     uint32_t chunk_size = 0 ;
     uint32_t chunk_loc = 0 ;
 
-    for ( int i = 0  , cf = 0; i < mem_heap->mem_sz/8  ; i++ ) {
+    for ( int i = 0  , cf = 0; i < bk_range  ; i++ ) {
         uint8_t bk_val = bk[i] ;
       for ( int j = 0 ; j < 8  ; j++ , bk_val>>= 1 ) {
         if (  cf ||  (((bk_val&1) == 1) && !cf )  ) {
-            chunk_size++ ;
+            chunk_size+= mem_heap->heap_align ;
         }
         if ( (bk_val&1) == 1 && cf == 0 ) {
-            chunk_loc = i ;
+            chunk_loc = 8*i + j;
             cf = !cf ;
         }
         else if ( (bk_val&1) == 1 && cf  ){
-            LW_DEBUG("\r\n Allocated Chunk[%d] -- Found at Memory Location = %x -- Size = %d " , chunk_i ,&mem_heap->heap[chunk_loc*mem_heap->heap_align]  , chunk_size ) ;
+            LW_DEBUG("\r\n--Allocated Chunk[%d] -- Found at Memory Location = 0x%x -- Size = %d " , chunk_i ,(uint32_t)&mem_heap->heap[chunk_loc*mem_heap->heap_align]  , chunk_size ) ;
             cf = !cf ;
             chunk_i++;
             chunk_size = 0 ;
@@ -301,6 +320,12 @@ int lw_printf (char * str, ...)
 		           j += strlen(tmp);
 		           break;
 		        }
+		        case 's':
+		        {
+		           strcpy(&buff[j], va_arg( vl, char* ));
+		           j += strlen(tmp);
+		           break;
+		        }
         	}
      	}
      	else
@@ -312,6 +337,8 @@ int lw_printf (char * str, ...)
 	}
 
 	/* Uart Debug Here*/
+
+	lwUSART_AS_Send( LW_DEBUG_PORT ,(uint8_t*)&buff[0] ,  j ) ;
     va_end(vl);
     return j;
  }

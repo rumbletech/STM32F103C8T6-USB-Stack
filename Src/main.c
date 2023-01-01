@@ -11,39 +11,68 @@ extern s_lwGPIO_Config pa2 ;
 extern s_lwGPIO_Config pa3 ;
 
 
+volatile int32_t usb_state = USB_STATE_IDLE ;
+
 
 int main(void)
 {
-
+	//todo replace infinite loop with kernel
 
 
 
 
 	while(1)
 	{
-		//todo figure out the frequency of the running clock as it doesn't make sense if it 72 Mhz
-		// with the current called delay and what we are seeing
-	//	lwGPIO_SetPin(GPIOC , &pc13) ;
-		GPIOC->BSRR = GPIO_BSRR_BS13_Msk ;
-		lw_waitfor_us(1000);
-	//	lwGPIO_ResetPin(GPIOC , &pc13) ;
-		GPIOC->BSRR = GPIO_BSRR_BR13_Msk ;
-		lw_waitfor_us(1000);
+
+//		GPIOC->BSRR = GPIO_BSRR_BS13_Msk ;
+//		lw_waitfor_us(100000);
+//		GPIOC->BSRR = GPIO_BSRR_BR13_Msk ;
+//		lw_waitfor_us(100000);
+
+		if ( usb_state == USB_STATE_RESET )
+		{
+			/* Reset Task */
+			//lwUSB_Init();
+	//		lwUSB_Reset();
+
+
+			usb_state = USB_STATE_IDLE ;
+
+		}
+		else if ( usb_state == USB_STATE_SUSP )
+		{
+
+
+			usb_state = USB_STATE_IDLE ;
+		}
+		else if ( usb_state == USB_STATE_SOF )
+		{
+
+			usb_state = USB_STATE_IDLE ;
+
+		}
+		else if ( usb_state == USB_STATE_ESOF )
+		{
+
+			usb_state = USB_STATE_IDLE ;
+
+		}
+		else if ( usb_state == USB_STATE_ERR )
+		{
+
+			usb_state = USB_STATE_IDLE ;
+
+		}
+		else if ( usb_state == USB_STATE_WKUP )
+		{
+
+			usb_state = USB_STATE_IDLE ;
+
+		}
 
 
 
 	}
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -11,12 +11,12 @@
 #define	 UINT32_CAST_GPIOD  UINT32T_CAST(GPIOD)
 #define	 UINT32_CAST_GPIOE  UINT32T_CAST(GPIOE)
 
-#define ASSERT_GPIO_TYPDEF(GPIO_IN) ( (GPIO_IN == UINT32_CAST_GPIOA) || \
-									  (GPIO_IN == UINT32_CAST_GPIOB) || \
-									  (GPIO_IN == UINT32_CAST_GPIOC) || \
-									  (GPIO_IN == UINT32_CAST_GPIOD) || \
-									  (GPIO_IN == UINT32_CAST_GPIOE) || \
-									  ) \
+#define ASSERT_GPIO_TYPDEF(GPIO_IN) LW_ASSERT( ( (UINT32T_CAST(GPIO_IN) == UINT32_CAST_GPIOA) || \
+									  (UINT32T_CAST(GPIO_IN) == UINT32_CAST_GPIOB) || \
+									  (UINT32T_CAST(GPIO_IN) == UINT32_CAST_GPIOC) || \
+									  (UINT32T_CAST(GPIO_IN) == UINT32_CAST_GPIOD) || \
+									  (UINT32T_CAST(GPIO_IN) == UINT32_CAST_GPIOE)  \
+									  ) ) \
 
 LW_INLINE err_t lwGPIO_EnableGPIO ( GPIO_TypeDef* lwgpio  ){
 #if ( LW_ASSERT_ENABLE == 1U )
@@ -41,7 +41,7 @@ LW_INLINE err_t lwGPIO_EnableGPIO ( GPIO_TypeDef* lwgpio  ){
 		RCC->APB2ENR |= RCC_APB2ENR_IOPEEN_Msk ;
 		break;
 	default :
-		LW_DEBUG(ERR_PARAM  , "LW_DEBUG: Invalid_Param" ) ;
+		LW_DEBUG( "LW_DEBUG: Invalid_Param" ) ;
 		return ERR_PARAM ;
 	}
 	return ERR_OK ;
@@ -50,7 +50,7 @@ LW_INLINE err_t lwGPIO_EnableGPIO ( GPIO_TypeDef* lwgpio  ){
 
 LW_INLINE err_t lwGPIO_WritePort( GPIO_TypeDef* lwgpio , uint16_t portv  ){
 #if ( LW_ASSERT_ENABLE == 1U )
-	LW_ASSERT( portv&0xFFFF == 0);
+	LW_ASSERT( (portv&0xFFFF) == 0 );
 	ASSERT_GPIO_TYPDEF(lwgpio);
 #endif
 	lwgpio->ODR = portv ;
@@ -68,7 +68,7 @@ LW_INLINE int32_t lwGPIO_ReadPort( GPIO_TypeDef* lwgpio  ){
 
 LW_INLINE err_t lwGPIO_SetPin( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_cs  ){
 #if ( LW_ASSERT_ENABLE == 1U )
-	LW_ASSERT( pin_i <= 15u );
+	LW_ASSERT( lwgpio_cs->pin_i <= 15u );
 	ASSERT_GPIO_TYPDEF(lwgpio);
 #endif
 	lwgpio->BSRR |= ( 1u << lwgpio_cs->pin_i )  ;
@@ -77,7 +77,7 @@ LW_INLINE err_t lwGPIO_SetPin( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_cs
 
 LW_INLINE err_t lwGPIO_ResetPin( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_cs ){
 #if ( LW_ASSERT_ENABLE == 1U )
-	LW_ASSERT( pin_i <= 15u );
+	LW_ASSERT( lwgpio_cs->pin_i <= 15u );
 	ASSERT_GPIO_TYPDEF(lwgpio);
 #endif
 	lwgpio->BRR |= ( 1u << lwgpio_cs->pin_i )  ;
@@ -86,7 +86,7 @@ LW_INLINE err_t lwGPIO_ResetPin( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_
 
 LW_INLINE int8_t lwGPIO_ReadPin( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_cs  ){
 #if ( LW_ASSERT_ENABLE == 1U )
-	LW_ASSERT( pin_i <= 15u );
+	LW_ASSERT( lwgpio_cs->pin_i <= 15u );
 	ASSERT_GPIO_TYPDEF(lwgpio);
 #endif
 	if( lwgpio->IDR & (1u << lwgpio_cs->pin_i )){

@@ -12,10 +12,10 @@
 
 
 
-#define ASSERT_USART_TYPDEF(USART_IN) ((USART_IN == UINT32_CAST_USART1) || \
-									  (USART_IN == UINT32_CAST_USART2) || \
-									  (USART_IN == UINT32_CAST_USART3) || \
-									  ) \
+#define ASSERT_USART_TYPDEF(USART_IN) LW_ASSERT(( (UINT32T_CAST(USART_IN) == UINT32_CAST_USART1) || \
+									  (UINT32T_CAST(USART_IN) == UINT32_CAST_USART2) || \
+									  (UINT32T_CAST(USART_IN) == UINT32_CAST_USART3)  \
+									  )) \
 
 
 
@@ -36,7 +36,7 @@ LW_INLINE err_t lwUSART_EnableUSART ( USART_TypeDef* lwusart  ){
 		RCC->APB1ENR |= RCC_APB1ENR_USART3EN_Msk ;
 		break;
 	default :
-		LW_DEBUG(ERR_PARAM  , "LW_DEBUG: Invalid_Param" ) ;
+		LW_DEBUG("LW_DEBUG: Invalid_Param" ) ;
 		return ERR_PARAM ;
 	}
 	return ERR_OK ;
@@ -65,7 +65,7 @@ err_t lwUSART_Config( USART_TypeDef* lwusart , s_lwUSART_Config* lwusart_cs ){
 	LW_ASSERT( lwusart_cs->stop_bits <= LWUSART_USART_STOPBITS_RANGE );
 	LW_ASSERT( lwusart_cs->baudrate <= LWUSART_USART_BAUDRATE_RANGE );
 	LW_ASSERT( lwusart_cs->clock_en <= LWUSART_USART_CLOCK_EN_RANGE );
-	LW_ASSERT( lwusart_cs->clock_config <= LWUSART_USART_CLOCK_RANGE );
+	LW_ASSERT( lwusart_cs->clock_config <= LWUSART_USART_CLOCK_CONFIG_RANGE );
 	ASSERT_USART_TYPDEF(lwusart);
 #endif
 

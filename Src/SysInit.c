@@ -41,18 +41,31 @@ s_lwGPIO_Config pa8 = {  .conf  = e_lwGPIO_conf_AF_PP ,
 
 s_lwGPIO_Config pa2 = {  .conf  = e_lwGPIO_conf_AF_PP ,
 						 .mode  = e_lwGPIO_mode_output_10M ,
-						 .pin_i = 8 ,
-						 .lock  = 0u
+						 .pin_i = 2 ,
+						 .lock  = 1u
 };
 
 s_lwGPIO_Config pa3 = {  .conf  = e_lwGPIO_conf_floating ,
 						 .mode  = e_lwGPIO_mode_input ,
-						 .pin_i = 8 ,
-						 .lock  = 0u
+						 .pin_i = 3 ,
+						 .lock  = 1u
 };
 
+s_lwGPIO_Config pa11 = {  .conf  = e_lwGPIO_conf_AF_PP ,
+						 .mode  = e_lwGPIO_mode_output_50M ,
+						 .pin_i = 11 ,
+						 .lock  = 1u
+};
+
+s_lwGPIO_Config pa12 = {  .conf  = e_lwGPIO_conf_AF_PP ,
+						 .mode  = e_lwGPIO_conf_AF_PP ,
+						 .pin_i = 12 ,
+						 .lock  = 1u
+};
+
+
 s_lwUSART_Config usart2 = {
-						     .baudrate     = 9600 ,
+						     .baudrate     = 115200 ,
 							 .clock_config = DONT_CARE ,
 							 .clock_en     = DONT_CARE ,
 							 .mode         = e_lwUSART_usart_mode_full_duplex ,
@@ -94,7 +107,7 @@ static void RCC_Init( void )
 	// todo
 	/* lw_init should be improved , USING PARAMS TO CALCULATE FREQ AT RUNTIME*/
 	uint32_t sys_clk = PLL_MULL_FACTOR * HSE_FREQ ;
-	lw_Init( PLL_MULL_FACTOR * HSE_FREQ  ,sys_clk/2 , sys_clk , ( sys_clk * 2 )/3 );
+	lw_Init( sys_clk  ,sys_clk/2 , sys_clk , ( sys_clk * 2 )/3 );
 
 }
 
@@ -113,7 +126,10 @@ static void DebugUSART_Init( void )
 }
 static void USB_Init( void )
 {
-	 lwUSB_Init();
+	lwGPIO_EnableGPIO(GPIOA);
+	lwGPIO_Config( GPIOA , &pa11);
+	lwGPIO_Config( GPIOA , &pa12);
+	lwUSB_Init();
 
 }
 static void GPIO_Init( void )
