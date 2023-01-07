@@ -51,9 +51,9 @@
 #define LWUSB_SYS_ADDR(X) ((uint32_t*)((uint32_t)LWUSB_PMA_START_ADDR + X*LWUSB_PMA_BUFF_ALIGNMENT))
 #define LWUSB_GET_BTABLE_ADDR() LWUSB_SYS_ADDR(USB->BTABLE)
 #define LWUSB_GET_EPR(EP_NUM) (((uint32_t*)LWUSB_USB_TYPEDEF)+EP_NUM)
-#define LWUSB_WRITE_STAT_RX(EPXR,STAT) *(EPXR) = (( ((*EPXR)&LWUSB_SAVE_EP_TOGG)^(STAT << USB_EP0R_STAT_RX_Pos) ) ) ;
 #define LWUSB_WRITE_DTOG_RX(EPXR,DTOG) *(EPXR) = (( ((*EPXR)&LWUSB_SAVE_EP_TOGG)^(DTOG << USB_EP0R_DTOG_RX_Pos) ) ) ;
-#define LWUSB_WRITE_STAT_TX(EPXR,STAT) *(EPXR) = (( ((*EPXR)&LWUSB_SAVE_EP_TOGG)^(STAT << USB_EP0R_STAT_TX_Pos) ) ) ;
+#define LWUSB_WRITE_STAT_RX(EPXR,STAT)  *(EPXR) = (( (*EPXR)^(STAT << USB_EP0R_STAT_RX_Pos) )&((LWUSB_SAVE_EP_TOGG|USB_EP0R_STAT_RX_Msk)) );
+#define LWUSB_WRITE_STAT_TX(EPXR,STAT)  *(EPXR) = (( (*EPXR)^(STAT << USB_EP0R_STAT_TX_Pos) )&((LWUSB_SAVE_EP_TOGG|USB_EP0R_STAT_TX_Msk)) );
 #define LWUSB_WRITE_DTOG_TX(EPXR,DTOG) *(EPXR) = (( ((*EPXR)&LWUSB_SAVE_EP_TOGG)^(DTOG << USB_EP0R_DTOG_TX_Pos) ) ) ;
 #define LWUSB_CLEAR_CTR_RX(EPXR)       *(EPXR) = (((*EPXR)&(~USB_EP0R_CTR_RX_Msk))&LWUSB_SAVE_EP_TOGG)
 #define LWUSB_CLEAR_CTR_TX(EPXR)       *(EPXR) = (((*EPXR)&(~USB_EP0R_CTR_TX_Msk))&LWUSB_SAVE_EP_TOGG)
@@ -140,9 +140,30 @@ typedef enum {
 } e_lwUSB_controller_state ;
 
 
+typedef enum {
+
+	e_lwUSB_transaction_state_null          = 0u ,
+	e_lwUSB_transaction_state_setup_stage   = 1u ,
+	e_lwUSB_transaction_state_status_stage =  2u ,
+	e_lwUSB_transaction_state_data_in       = 3u ,
+	e_lwUSB_transaction_state_data_out      = 4u ,
+
+} e_lwUSB_transaction_state ;
+
+struct lwUSB_transaction_s {
 
 
-struct e_lwUSB_ep_s {
+	uint8_t* payload_buffer                  ;
+	uint32_t payload_length                  ;
+	uint32_t payload_ptr                     ;
+	e_lwUSB_transaction_state current_state  ;
+	e_lwUSB_transaction_state previous_state ;
+	struct lwUSB_transaction_s * next        ;
+
+
+
+};
+struct lwUSB_ep_s {
 
 	uint32_t isInitialized ;
 
@@ -151,6 +172,18 @@ struct e_lwUSB_ep_s {
 	uint32_t ep_num ;
 	uint8_t ep_addr ;
 	e_lwUSB_ep_dir dir ;
+
+	/* Transactions */
+	union {
+		struct lwUSB_transaction_s* t_in ;
+		struct lwUSB_transaction_s* t_out_d ;
+
+	};
+	union {
+		struct lwUSB_transaction_s* t_out ;
+		struct lwUSB_transaction_s* t_in_d ;
+
+	};
 
 
 	union {
@@ -182,17 +215,11 @@ struct e_lwUSB_ep_s {
 	};
 };
 
-struct lwUSB_controller_s {
 
-	uint32_t isInitialized ;
-	e_lwUSB_controller_state lwUSB_device_state ;
-	struct e_lwUSB_ep_s * lwUSB_eps[LWUSB_EP_NUM];
-
-};
 
 err_t lwUSB_HardwareReset( void );
 err_t lwUSB_Init( void );
-err_t lwUSB_Initialize_Endpoint ( struct e_lwUSB_ep_s * lwusb_ep );
+err_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * lwusb_ep );
 err_t lwUSB_Reset( void );
 
 

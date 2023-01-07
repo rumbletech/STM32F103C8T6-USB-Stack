@@ -33,6 +33,19 @@ struct lwUSB_device_descriptor_s lwUSB_Device_Descriptor = {
 };
 
 
+struct lwUSB_configuration_descriptor_s lwUSB_Configuration_Descriptor = {
+
+		.bLength = 9u ,
+		.bDescriptorType = e_lwUSB_bdescriptor_type_configuration ,
+		.wTotalLength =  128 ,
+		.bNumInterfaces = 1u ,
+		.bConfigurationValue = 0x23  ,
+		.iConfiguration = 0 ,
+		.bmAttributes = 0x80 ,
+		.bMaxPower  = 100 ,
+
+};
+
 
 
 

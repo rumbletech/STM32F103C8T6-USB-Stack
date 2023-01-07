@@ -8,6 +8,16 @@
 #ifndef SRC_LWUSB_SPECS_H_
 #define SRC_LWUSB_SPECS_H_
 
+#define BMREQUEST_DIRECTION_HOST_TO_DEVICE 0u
+#define BMREQUEST_DIRECTION_DEVICE_TO_HOST 1u
+#define BMREQUEST_TYPE_STANDARD 0u
+#define BMREQUEST_TYPE_CLASS    1u
+#define BMREQUEST_TYPE_VENDOR   2u
+#define BMREQUEST_RECIPIENT_DEVICE 0u
+#define BMREQUEST_RECIPIENT_INTERFACE 1u
+#define BMREQUEST_RECIPIENT_ENDPOINT 2u
+#define BMREQUEST_RECIPIENT_OTHERS 3u
+
 
 
 
@@ -191,7 +201,13 @@ struct lwUSB_setup_data {
 	} bmRequestType  ;
 
 	uint8_t bRequest ;
-	uint16_t wValue  ;
+	union {
+		uint16_t wValue  ;
+		struct {
+			uint8_t descriptorIndex;
+			uint8_t descriptorType;
+		};
+	};
 	uint16_t wIndex  ;
 	uint16_t wLength ;
 };
