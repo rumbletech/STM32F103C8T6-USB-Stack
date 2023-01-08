@@ -13,16 +13,22 @@
 //todo remove
 extern volatile int32_t usb_state ;
 static uint32_t  sofc = 0  ;
-
-
+static uint32_t string_indexing  = 0 ;
+static uint32_t get               = 0 ;
+static uint8_t lwUSB_next_config_value  = LWUSB_CONFIG_VALUE_START ;
+static uint8_t lwUSB_next_string_index  = LWUSB_STRING_INDEX_START ;
 struct lwUSB_controller_s {
 
-	uint32_t isInitialized ;
-	e_lwUSB_controller_state lwUSB_device_state ;
-	uint8_t device_addr ;
-	struct lwUSB_setup_data request ;
-	uint8_t isrequest ;
-	struct lwUSB_ep_s * lwUSB_eps[LWUSB_EP_NUM];
+	uint32_t isInitialized ;					  /* Initialization Checker */
+	e_lwUSB_controller_state lwUSB_device_state ; /* device state */
+	uint8_t device_addr ;						  /* assigned address to the device */
+	struct lwUSB_setup_data request ;		      /* Pointer to the setup request data */
+	uint8_t isrequest ;                           /* is set when a setup transaction is completed and cleared on the end of the status stage */
+	struct lwUSB_ep_s * lwUSB_eps[LWUSB_EP_NUM];  /* Array of pointers to EPs data structs  */
+	struct lwUSB_configuration_s * configurations ;
+	struct lwUSB_string_s *        strings ;
+	struct lwUSB_configuration_s * current_configuration ;
+
 
 
 };
@@ -68,6 +74,9 @@ static struct lwUSB_ep_s control_0 = {
 static struct lwUSB_controller_s lwUSB_controller = {
 		.isInitialized = 0u ,
 		.lwUSB_device_state = e_lwUSB_controller_state_Default ,
+		.configurations = NULL ,
+		.current_configuration = NULL ,
+		.strings = NULL ,
 		.device_addr = 0u ,
 		.isrequest = 0u ,
 		.lwUSB_eps = {NULL}
@@ -184,6 +193,79 @@ static inline err_t lwUSB_HW_SetAddress ( uint8_t addr )
 }
 
 
+struct lwUSB_string_s * lwUSB_FindStringbyIndex ( uint8_t stringID ){
+
+	struct lwUSB_string_s * s ;
+
+	for ( s = lwUSB_controller.strings ; s != NULL ; s = s->next ){
+		if ( s->sid == stringID ){
+			return s ;
+		}
+	}
+
+	return NULL ;
+
+}
+err_t  lwUSB_RegisterString( uint8_t stringID , struct lwUSB_string_descriptor_s * d_string  ) {
+
+	if ( !d_string ){
+		return ERR_NULL ;
+	}
+
+	if ( lwUSB_FindStringbyIndex(stringID) != NULL ){
+		return ERR_FAULT ;
+	}
+
+	struct lwUSB_string_s * s = (struct lwUSB_string_s *)malloc(sizeof(struct lwUSB_string_s ));
+	if ( !s ){
+		return ERR_NULL ;
+	}
+	s->sid = stringID ;
+	s->d_string = d_string ;
+
+	s->next = lwUSB_controller.strings ;
+	lwUSB_controller.strings = s ;
+
+	return ERR_OK ;
+}
+
+err_t lwUSB_Copy_String( uint8_t* sbuff ,struct lwUSB_string_s * string ){
+
+	if (!string || !sbuff ){
+		return ERR_NULL ;
+	}
+	uint32_t p ;
+
+	if ( string->sid == 0u ){
+		 p = 0u ;
+		 uint8_t* s_d_cast = (uint8_t*) string->d_string ;
+		 for ( uint32_t i = 0 ; i < sizeof(struct lwUSB_string_descriptor0_s) ; i++ ){
+			 sbuff[p++] = s_d_cast[i];
+		 }
+	}
+	else{
+		/* UTF16-LE Support */
+		p = 2;
+		uint8_t* s_d_cast = (uint8_t*) string->d_string->bString ;
+		for ( uint32_t i = 0 ; s_d_cast[i] != 0u ; i++ ) {
+			sbuff[p++] = s_d_cast[i] ;
+			if ( !( s_d_cast[i] >= 0x20 && s_d_cast[i]  <= 0x7F )){
+				return ERR_FAULT ;
+			}
+			sbuff[p++] = 0u ;
+		}
+		if ( string->sid == 0xee ){
+			sbuff[p++] = ((struct lwUSB_microsoft_os_string_descriptor_s*)string->d_string)->VendorCode ;
+			sbuff[p++] = ((struct lwUSB_microsoft_os_string_descriptor_s*)string->d_string)->reserved ;
+
+		}
+		sbuff[0] = p ;
+		sbuff[1] = e_lwUSB_bdescriptor_type_string ;
+	}
+
+	return ERR_OK ;
+}
+
 err_t lwUSB_Reset( void )
 {
 
@@ -204,6 +286,7 @@ err_t lwUSB_Reset( void )
 	lwUSB_controller.lwUSB_eps[0] = &control_0 ;
 	/* return to default state */
 	lwUSB_controller.lwUSB_device_state = e_lwUSB_controller_state_Default ;
+
 	lwUSB_HW_SetAddress(0u);
 
 	err_t status = lwUSB_Initialize_Endpoint( lwUSB_controller.lwUSB_eps[0] ) ;
@@ -236,6 +319,16 @@ err_t lwUSB_Init( void )
 				 USB_CNTR_WKUPM_Msk )  ;
 
 	USB->DADDR&= ~( USB_DADDR_ADD_Msk | USB_DADDR_EF_Msk );
+
+
+	/* Register Device String Descriptors */
+	lwUSB_RegisterString( 0u, (struct lwUSB_string_descriptor_s*)&lwUSB_string0_descriptor);
+	lwUSB_RegisterString( 1u, &lwUSB_manufacturer_string_descriptor);
+	lwUSB_RegisterString( 2u, &lwUSB_product_string_descriptor);
+	lwUSB_RegisterString( 3u, &lwUSB_serial_string_descriptor);
+	lwUSB_RegisterString( 0xee ,(struct lwUSB_string_descriptor_s*) &lwUSB_microsoft_os_string_descriptor);
+
+
 
 
 	return ERR_OK ;
@@ -350,6 +443,38 @@ err_t lwUSB_Transfer_IN(struct lwUSB_ep_s * ep ,  uint8_t * ptr , uint32_t lengt
 
 
 }
+
+static err_t lwUSB_Copy_Configuration ( uint8_t * dest , struct lwUSB_configuration_s * config )
+{
+
+	struct lwUSB_interface_s * intf  ;
+	struct lwUSB_endpoint_s  * ep    ;
+	uint32_t p = 0 ;
+	uint8_t* config_cast = (uint8_t*)config->d_configuration ;
+	for ( uint32_t i = 0 ; i < config->d_configuration->bLength ; i++ ){
+		dest[p++] = config_cast[i] ;
+	}
+	for( intf = config->interface ; intf != NULL ; intf = intf->next ){
+		uint8_t * intf_cast = (uint8_t*)intf->d_interface ;
+		for ( uint32_t i = 0 ; i < intf->d_interface->bLength ; i++ ){
+			dest[p++] = intf_cast[i] ;
+		}
+		for( ep = intf->endpoint ; ep != NULL ; ep = ep->next ){
+			uint8_t * ep_cast = (uint8_t*) ep->d_endpoint ;
+			for ( uint32_t i = 0 ; i < ep->d_endpoint->bLength ; i++ ){
+				dest[p++] = ep_cast[i];
+			}
+
+		}
+	}
+
+	if ( p != config->d_configuration->wTotalLength ){
+		return ERR_FAULT ;
+	}
+
+	return ERR_OK ;
+
+}
 static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 {
 	//todo remove
@@ -388,12 +513,18 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 		switch( request->bRequest )
 		{
 		case e_lwUSB_setup_request_get_status  :
+			debug++;
+			debug++;
 			USE(unused);
 			break;
 		case e_lwUSB_setup_request_clear_feature :
+			debug++;
+			debug++;
 			USE(unused);
 			break;
 		case e_lwUSB_setup_request_set_feature :
+			debug++;
+			debug++;
 			USE(unused);
 			break;
 		case e_lwUSB_setup_request_set_address  :
@@ -417,6 +548,13 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 			break;
 		case e_lwUSB_setup_request_get_descriptor  :
 			debug++;
+			get++;
+
+			if ( get == 7 )
+			{
+				debug++;
+				debug++;
+			}
 			lwUSB_controller.isrequest++;
 			if ( request->bmRequestType.Direction == BMREQUEST_DIRECTION_DEVICE_TO_HOST &&
 				 request->bmRequestType.Recipient == BMREQUEST_RECIPIENT_DEVICE &&
@@ -428,25 +566,84 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 					}
 					else if ( request->descriptorType == e_lwUSB_bdescriptor_type_configuration )
 					{
+						uint8_t config_num = request->descriptorIndex  ;
+						struct lwUSB_configuration_s * p = lwUSB_controller.configurations ;
+						for (  ; p != NULL  ; p = p->next  ){
+							if ( config_num == LWUSB_GET_CONFIG_V_NUM(p->d_configuration->bConfigurationValue ) ){
+								break ;
+							}
+						}
 
-						lwUSB_Transfer_IN( curr_ep , (uint8_t*)&lwUSB_Configuration_Descriptor , sizeof(struct lwUSB_configuration_descriptor_s ) ) ;
+						if ( !p ){
+							/* No such configuration */
+							/*todo  check handling  */
+							LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
+							LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
+						}
+						else{
+							uint8_t cbuff[p->d_configuration->wTotalLength];
+							lwUSB_Copy_Configuration(cbuff, p);
+							/* Send Configuration Descriptor */
+							lwUSB_Transfer_IN( curr_ep , cbuff , p->d_configuration->wTotalLength  ) ;
+
+						}
+					}
+					else if (  request->descriptorType == e_lwUSB_bdescriptor_type_string ){
+
+						string_indexing++;
+
+						struct lwUSB_string_s * s = lwUSB_FindStringbyIndex(request->descriptorIndex);
+						if ( !s ){
+							LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
+							LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
+							break ;
+						}
+						uint32_t b_size = request->descriptorIndex == 0 ? (sizeof(struct lwUSB_string_descriptor0_s)) : ( strlen(s->d_string->bString)*2u + 2u );
+						uint8_t sbuff[b_size];
+						lwUSB_Copy_String(sbuff , s );
+						lwUSB_Transfer_IN( curr_ep , sbuff , b_size  ) ;
 
 					}
+					else if ( request->descriptorType == e_lwUSB_bdescriptor_type_device_qualifier )
+					{
+						debug++;
+						debug++;
+					}
+					else{
+
+						LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
+						LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
+					}
+
 			}
 			else{
 					//todo handler
+				debug++;
+				debug++;
+
 			}
 			break;
 		case e_lwUSB_setup_request_set_descriptor :
+			debug++;
+			debug++;
 			break;
 		case e_lwUSB_setup_request_get_configuration  :
+			debug++;
+			debug++;
 			USE(unused);
 			break;
 		case e_lwUSB_setup_request_set_configuration    :
+			debug++;
+			debug++;
 			break;
 		case e_lwUSB_setup_request_get_interface     :
+			debug++;
+			debug++;
 			break;
 		case e_lwUSB_setup_request_set_interface      :
+			debug++;
+			debug++;
+
 			break;
 		case e_lwUSB_setup_request_synch_frame        :
 			break;
@@ -455,6 +652,8 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 		case e_lwUSB_setup_request_set_isochronous_delay :
 			break;
 		default:
+			debug++;
+			debug++;
 			return ERR_FAULT;
 		}
 	}
@@ -514,6 +713,7 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 	}
 	else{
 		//todo error
+
 	}
 
 
@@ -642,6 +842,158 @@ err_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * lwusb_ep )
 
 }
 
+
+
+
+err_t lwUSB_RegisterInterface ( struct lwUSB_interface_s * interface , struct lwUSB_configuration_s * config ){
+
+	if ( !interface || !config ){
+		return ERR_NULL ;
+	}
+	uint32_t index = 0u ;
+	for ( struct lwUSB_interface_s *  temp_intf = config->interface ; temp_intf != NULL ; temp_intf = temp_intf->next , index++ ){
+		if ( UINT32T_CAST(temp_intf) == UINT32T_CAST(interface) ){
+			return ERR_FAULT ;
+		}
+	}
+	interface->d_interface->bInterfaceNumber = index ;
+	config->d_configuration->bNumInterfaces++ ;
+	/* Register EP to the interface */
+	interface->next = config->interface ;
+	config->interface = interface ;
+
+	return ERR_OK ;
+
+
+}
+
+err_t lwUSB_RegisterEndpoint ( struct lwUSB_endpoint_s * endpoint , struct lwUSB_interface_s * interface ){
+
+	if ( !endpoint || !interface ){
+		return ERR_NULL ;
+	}
+
+	if ( interface->d_interface->bNumEndpoints >= LWUSB_EP_NUM ){
+		return ERR_FAULT ;
+	}
+
+	for ( struct lwUSB_endpoint_s *  temp_ep = interface->endpoint ; temp_ep != NULL ; temp_ep = temp_ep->next ){
+		if ( UINT32T_CAST(temp_ep) == UINT32T_CAST(endpoint) ){
+			return ERR_FAULT ;
+		}
+	}
+	interface->d_interface->bNumEndpoints++ ;
+	/* Register EP to the interface */
+	endpoint->next = interface->endpoint ;
+	interface->endpoint = endpoint ;
+
+	return ERR_OK ;
+
+}
+struct lwUSB_endpoint_s * lwUSB_InitializeEndpoint( struct lwUSB_endpoint_descriptor_s * d_endpoint ) {
+
+	d_endpoint->bLength = 7u ;
+	d_endpoint->bDescriptorType = e_lwUSB_bdescriptor_type_endpoint ;
+	if ( ( d_endpoint->bEndpointAddress & 0x0F )  > LWUSB_EP_NUM -1 ){
+		return NULL ;
+	}
+	if ( d_endpoint->bInterval  == 0u ){
+		return NULL ;
+	}
+
+	struct lwUSB_endpoint_s * endpoint = (struct lwUSB_endpoint_s * )malloc(sizeof(struct lwUSB_endpoint_s ));
+
+	if ( !endpoint ){
+		return NULL ;
+	}
+
+	endpoint->d_endpoint = d_endpoint ;
+
+	return endpoint ;
+
+}
+
+struct lwUSB_interface_s * lwUSB_InitializeInterface ( struct lwUSB_interface_descriptor_s * d_interface ) {
+
+	d_interface->bLength            = 9u ;
+	d_interface->bDescriptorType    = e_lwUSB_bdescriptor_type_interface ;
+	d_interface->bInterfaceNumber   = 0u ;
+	d_interface->bAlternateSetting  = 0u ;
+	d_interface->bInterfaceClass    = 0u ;
+	d_interface->bInterfaceSubclass = 0u ;
+	d_interface->bInterfaceProtocol = 0u ;
+	d_interface->bNumEndpoints      = 0u ;
+	if ( d_interface->iInterface ){
+		d_interface->iInterface = lwUSB_next_string_index++ ;
+	}
+	struct lwUSB_interface_s *  interface = (struct lwUSB_interface_s * )malloc(sizeof(struct lwUSB_interface_s ));
+
+	if ( !interface ){
+		return NULL ;
+	}
+
+	interface->d_interface = d_interface ;
+
+	return interface ;
+
+}
+
+struct lwUSB_configuration_s *  lwUSB_InitializeConfiguration ( struct lwUSB_configuration_descriptor_s * d_config ){
+	/* Force constant field values */
+	d_config->bLength             = 9u ;
+	d_config->wTotalLength        = 0u ;
+	d_config->bNumInterfaces      = 0u ;
+	d_config->bDescriptorType     = e_lwUSB_bdescriptor_type_configuration ;
+	d_config->bConfigurationValue = lwUSB_next_config_value++ ;
+	if ( d_config->iConfiguration ){
+		d_config->iConfiguration = lwUSB_next_string_index++ ;
+	}
+
+	struct lwUSB_configuration_s *  config = (struct lwUSB_configuration_s *)malloc(sizeof(struct lwUSB_configuration_s));
+	if ( !config  ){
+		return NULL ;
+	}
+
+	config->d_configuration = d_config ;
+	return config ;
+
+}
+
+
+err_t lwUSB_RegisterConfiguration ( struct lwUSB_configuration_s * config )
+{
+	if ( !config || !config->interface || !config->d_configuration ){
+		return ERR_NULL ;
+	}
+
+	for ( struct lwUSB_configuration_s *  temp_config = lwUSB_controller.configurations ; temp_config != NULL ; temp_config = temp_config->next ){
+		if ( UINT32T_CAST(temp_config) == UINT32T_CAST(config) ){
+			return ERR_FAULT ;
+		}
+	}
+	/* Check Valid total length */
+
+	uint32_t totalLength = 0u ;
+	struct lwUSB_interface_s * interface ;
+	struct lwUSB_endpoint_s * endpoint ;
+	for ( interface = config->interface ; interface != NULL ; interface = interface->next ){
+		totalLength += interface->d_interface->bLength ;
+		for ( endpoint = interface->endpoint ; endpoint != NULL ; endpoint = endpoint->next ){
+			totalLength += endpoint->d_endpoint->bLength ;
+		}
+	}
+	lwUSB_Device_Descriptor.bNumConfigurations++ ;
+	config->d_configuration->wTotalLength = config->d_configuration->bLength + totalLength ;
+
+	config->next = lwUSB_controller.configurations ;
+	lwUSB_controller.configurations = config ;
+
+	return ERR_OK ;
+
+}
+
+
+
 /* Triggered only by a correct transfer event for isochronous and double-buffer bulk transfer
  * to reach the highest possible transfer rate.
  */
@@ -666,6 +1018,15 @@ void USB_LP_CAN_RX0_IRQHandler ( void )
 		USB->ISTR &= ~USB_ISTR_RESET_Msk ;
 		//Reset Handler
 		lwUSB_Reset();
+		// register ep1
+		if ( !(debug++) ){
+		struct lwUSB_configuration_s * config_1 = lwUSB_InitializeConfiguration(&lwUSB_Configuration_Descriptor );
+		struct lwUSB_interface_s     * intf_1   = lwUSB_InitializeInterface(&lwUSB_interface1_Descriptor);
+		struct lwUSB_endpoint_s      * ep_1     = lwUSB_InitializeEndpoint(&lwUSB_endpoint1_Descriptor);
+		lwUSB_RegisterEndpoint(ep_1, intf_1);
+		lwUSB_RegisterInterface(intf_1, config_1);
+		lwUSB_RegisterConfiguration(config_1);
+		}
 		//Flag
 		usb_state = USB_STATE_RESET;
 	}

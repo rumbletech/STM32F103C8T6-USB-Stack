@@ -12,7 +12,14 @@ extern s_lwGPIO_Config pa3 ;
 
 
 volatile int32_t usb_state = USB_STATE_IDLE ;
-
+/*
+ * todo refactor the code . without bricking it
+ * todo seperate in/out/setup handlers into seperate functions
+ * todo implement unidirictional only for data endpoints and bidirctional only for control eps
+ * todo implement ring buffers for rx/tx
+ * todo figure out correct handling for todos in the code .
+ * todo REFACTOR THE UGLY CODE -- SIMPLIFY
+ */
 
 int main(void)
 {

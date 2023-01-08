@@ -28,6 +28,8 @@
 #define LWUSB_BUFF_PER_EP 2u
 
 /* Constants */
+#define LWUSB_CONFIG_VALUE_START 0x40
+#define LWUSB_STRING_INDEX_START 0x20
 #define LWUSB_USB_TYPEDEF USB
 #define LWUSB_PMA_START_ADDR USB_PMAADDR
 #define LWUSB_BTABLE_ALIGNMENT 8u
@@ -57,7 +59,16 @@
 #define LWUSB_WRITE_DTOG_TX(EPXR,DTOG) *(EPXR) = (( ((*EPXR)&LWUSB_SAVE_EP_TOGG)^(DTOG << USB_EP0R_DTOG_TX_Pos) ) ) ;
 #define LWUSB_CLEAR_CTR_RX(EPXR)       *(EPXR) = (((*EPXR)&(~USB_EP0R_CTR_RX_Msk))&LWUSB_SAVE_EP_TOGG)
 #define LWUSB_CLEAR_CTR_TX(EPXR)       *(EPXR) = (((*EPXR)&(~USB_EP0R_CTR_TX_Msk))&LWUSB_SAVE_EP_TOGG)
+#define LWUSB_GET_CONFIG_V_NUM(VALUE) (VALUE-LWUSB_CONFIG_VALUE_START)
 
+
+/* This Implementation Supports only :
+ * Configurations with no class or vendor specific descriptors
+ * it only implements configurations with defined interfaces .
+ * it currently does not support double buffers.
+ * it currently does not support alternate interfaces
+ *
+ */
 
 struct lwUSB_btable_buff_entry_s {
 
@@ -163,6 +174,43 @@ struct lwUSB_transaction_s {
 
 
 };
+
+struct lwUSB_interface_s {
+
+
+	struct lwUSB_interface_descriptor_s * d_interface ;
+	struct lwUSB_endpoint_s  * endpoint   ;
+	struct lwUSB_interface_s * next ;
+
+};
+struct lwUSB_configuration_s {
+
+
+	struct lwUSB_configuration_descriptor_s * d_configuration  ;
+	struct lwUSB_interface_s * interface ;
+	struct lwUSB_configuration_s * next  ;
+
+};
+
+struct lwUSB_endpoint_s {
+
+	struct lwUSB_endpoint_descriptor_s * d_endpoint ;
+	struct lwUSB_endpoint_s * next ;
+
+
+};
+
+struct lwUSB_string_s {
+
+	struct lwUSB_string_descriptor_s * d_string ;
+	uint8_t sid ;
+	struct lwUSB_string_s * next ;
+
+
+};
+
+
+
 struct lwUSB_ep_s {
 
 	uint32_t isInitialized ;

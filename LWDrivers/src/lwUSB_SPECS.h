@@ -21,6 +21,33 @@
 
 
 
+typedef enum {
+
+	e_lwUSB_endpoint_transfer_type_control     = 0b00 ,
+	e_lwUSB_endpoint_transfer_type_isochronous = 0b01 ,
+	e_lwUSB_endpoint_transfer_type_bulk        = 0b10 ,
+	e_lwUSB_endpoint_transfer_type_interrupt   = 0b11 ,
+
+
+} e_lwUSB_endpoint_transfer_type ;
+
+typedef enum {
+
+	e_lwUSB_endpoint_synchronization_type_no_synchronization     = 0b00 ,
+	e_lwUSB_endpoint_synchronization_type_asynchronous           = 0b01 ,
+	e_lwUSB_endpoint_synchronization_type_adaptive               = 0b10 ,
+	e_lwUSB_endpoint_synchronization_type_synchronous            = 0b11 ,
+
+
+} e_lwUSB_endpoint_synchronization_type ;
+
+typedef enum {
+
+	e_lwUSB_endpoint_usage_type_data                = 0b00 ,
+	e_lwUSB_endpoint_usage_type_feedback            = 0b01 ,
+	e_lwUSB_endpoint_usage_implicit_feedback        = 0b10 ,
+
+} e_lwUSB_endpoint_usage_type ;
 
 typedef enum {
 
@@ -125,7 +152,15 @@ struct lwUSB_configuration_descriptor_s {
 	uint8_t  bNumInterfaces ;
 	uint8_t  bConfigurationValue  ;
 	uint8_t  iConfiguration ;
-	uint8_t  bmAttributes ;
+	union {
+		uint8_t  bmAttributes ;
+		struct {
+			uint8_t reserved : 5 ;
+			uint8_t remoteWakeup : 1 ;
+			uint8_t selfPowered  : 1 ;
+			uint8_t usb1p1_Compatibility : 1 ;
+		};
+	};
 	uint8_t  bMaxPower ;
 
 };
@@ -164,9 +199,30 @@ struct lwUSB_endpoint_descriptor_s {
 
 	uint8_t  bLength ;
 	uint8_t  bDescriptorType ;
-	uint8_t  bEndpointAddress ;
-	uint8_t  bmAttributes ;
-	uint16_t wMaxPacketSize  ;
+	union {
+		uint8_t  bEndpointAddress ;
+		struct {
+			uint8_t Endpoint_number : 4 ;
+			uint8_t reserved1        : 3 ;
+			uint8_t Direction       : 1 ;
+		};
+	};
+	union {
+		uint8_t  bmAttributes ;
+		struct {
+			uint8_t Transfer_Type : 2 ;
+			uint8_t Synchronization_Type : 2 ;
+			uint8_t Usage_Type : 2 ;
+		};
+	};
+	union {
+		uint16_t wMaxPacketSize  ;
+		struct {
+			uint16_t MaxPacketSize : 11 ;
+			uint16_t Additional_Transactions_PerMicroFrame : 2 ;
+			uint16_t reserved2 : 3 ;
+		};
+	};
 	uint8_t  bInterval  ;
 
 };
@@ -184,7 +240,7 @@ struct lwUSB_string_descriptor_s {
 
 	uint8_t  bLength ;
 	uint8_t  bDescriptorType ;
-	uint8_t  bString  ;
+	char*  bString  ;
 
 };
 
@@ -208,12 +264,24 @@ struct lwUSB_setup_data {
 			uint8_t descriptorType;
 		};
 	};
-	uint16_t wIndex  ;
+	union {
+		uint16_t wIndex  ;
+		uint16_t LangID  ;
+	};
 	uint16_t wLength ;
 };
 
 
+/* Windows Descriptors */
 
+struct lwUSB_microsoft_os_string_descriptor_s {
+	uint8_t  bLength ;
+	uint8_t  bDescriptorType ;
+	char*  bString ;
+	uint8_t  VendorCode ;
+	uint8_t  reserved   ;
+
+};
 
 
 
