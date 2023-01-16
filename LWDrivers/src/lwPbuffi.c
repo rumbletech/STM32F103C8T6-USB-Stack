@@ -5,8 +5,33 @@
 
 /* Packet Buffer Interface for USB Communication USB_PMAADDR */
 
+#define LWUSB_PMA_BTABLE_ADDRESS (LWUSB_PMA_START_ADDR/2u)
+#define LWUSB_BTABLE_SIZE (LWUSB_EP_NUM*LWUSB_PMA_BTABLE_ENTRY_SIZE/LWUSB_PMA_BUFF_ALIGNMENT)
+#define LWUSB_BUFF_SPACE_SIZE (LWUSB_BUFF_MEM_SIZE/LWUSB_PMA_BUFF_ALIGNMENT - LWUSB_BTABLE_SIZE)
 
 
+struct lwUSB_btable_buff_entry_s {
+
+	uint32_t addr ;    /* Address of Buffer */
+	uint32_t count ;   /* Size */
+
+};
+
+struct lwUSB_btable_ep_entry_s {
+
+	struct lwUSB_btable_buff_entry_s tx_buff ;		/* Single Buffered TX */
+	struct lwUSB_btable_buff_entry_s rx_buff ;	  /* Single Buffered RX */
+
+};
+
+struct lwUSB_pma_s {
+
+	struct lwUSB_btable_ep_entry_s btable[LWUSB_EP_NUM] ;
+	uint32_t buff_mem[LWUSB_BUFF_SPACE_SIZE];
+
+
+
+};
 
 struct lwUSB_pmabuffer_s {
 
@@ -26,7 +51,7 @@ struct lwUSB_pmacontrol_s {
 	/* PMA Memory */
 	struct lwUSB_pma_s * lwusb_pma ;
 	/* EP Buffer Structs , a maximum of LWUSB_EP_NUM * LWUSB_BUFF_PER_EP buffers can be allocated*/
-	struct lwUSB_pmabuffer_s lwusb_buffs[LWUSB_EP_NUM*LWUSB_BUFF_PER_EP];
+	struct lwUSB_pmabuffer_s lwusb_buffs[LWUSB_EP_NUM];
 	/* Next Free Address */
 	uint32_t * next_addr ;
 
@@ -63,7 +88,7 @@ void* lwUSB_Allocate( uint32_t ep_num , uint32_t size  )
 	}
 
 	uint32_t status = 0 ;
-	for ( int32_t i = 0 ; i < LWUSB_EP_NUM * LWUSB_BUFF_PER_EP ; i++ )
+	for ( int32_t i = 0 ; i < LWUSB_EP_NUM ; i++ )
 	{
 		if ( lwusb_pma_control.lwusb_buffs[i].isalloced == 0u )
 		{
@@ -160,7 +185,7 @@ err_t lwUSB_pmaInit( void )
 	lwusb_pma_control.lwusb_pma =  (struct lwUSB_pma_s*) LWUSB_PMA_START_ADDR ;
 	memset((void*)lwusb_pma_control.lwusb_pma  , LWUSB_FILL_VALUE ,  sizeof(struct lwUSB_pma_s) * sizeof(uint32_t));
 
-	for ( int32_t i = 0 ; i < LWUSB_EP_NUM*LWUSB_BUFF_PER_EP ; i++  ){
+	for ( int32_t i = 0 ; i < LWUSB_EP_NUM ; i++  ){
 
 		lwusb_pma_control.lwusb_buffs[i].isalloced = 0u ;
 		lwusb_pma_control.lwusb_buffs[i].ep_num = 0u ;

@@ -9,7 +9,7 @@
 #define SRC_LWUSB_DESCRIPTORS_H_
 
 #include "lwUSB_SPECS.h"
-#include "lwUSB.h"
+#include "lwUSB_Opts.h"
 
 //todo try to make static
 
@@ -22,13 +22,29 @@ struct lwUSB_device_descriptor_s lwUSB_Device_Descriptor = {
 	    .bDeviceClass			= e_lwUSB_device_class_interface_defined ,
 		.bDeviceSubClass		= e_lwUSB_device_class_interface_defined ,
 		.bDeviceProtocol        = e_lwUSB_device_class_interface_defined ,
-		.bMaxPacketSize0        = 64u ,
-		.idVendor               = 0x1672 ,
-		.idProduct              = 0x0407 ,
-		.bcdDevice              = 0x4003 ,
-		.iManufacturer          = 1 ,
-		.iProduct               = 2 ,
-		.iSerialNumber          = 3 ,
+#if LWUSB_OPTS_CONTROL_EP_TX_B_SIZE > LWUSB_OPTS_CONTROL_EP_RX_B_SIZE
+		.bMaxPacketSize0        = LWUSB_OPTS_CONTROL_EP_RX_B_SIZE ,
+#else
+		.bMaxPacketSize0        = LWUSB_OPTS_CONTROL_EP_TX_B_SIZE ,
+#endif
+		.idVendor               = LWUSB_OPTS_VENDOR_ID ,
+		.idProduct              = LWUSB_OPTS_PRODUCT_ID ,
+		.bcdDevice              = LWUSB_OPTS_BCD_VERSION ,
+#if LWUSB_OPTS_MANUFACTURER_STRINGD_EN != 0u
+		.iManufacturer          = LWUSB_OPTS_MANUFACTURER_STRINGD_I ,
+#else
+		.iManufacturer          = LWUSB_OPTS_MANUFACTURER_STRINGD_EN ,
+#endif
+#if LWUSB_OPTS_PRODUCT_STRINGD_EN != 0u
+		.iProduct               = LWUSB_OPTS_PRODUCT_STRINGD_I ,
+#else
+		.iProduct               = LWUSB_OPTS_PRODUCT_STRINGD_EN ,
+#endif
+#if LWUSB_OPTS_SERIAL_NUMBER_STRINGD_EN != 0u
+		.iSerialNumber          = LWUSB_OPTS_PRODUCT_STRINGD_I ,
+#else
+		.iSerialNumber          = LWUSB_OPTS_SERIAL_NUMBER_STRINGD_EN ,
+#endif
 		.bNumConfigurations     = 0u ,
 
 };

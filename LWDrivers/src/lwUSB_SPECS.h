@@ -192,7 +192,6 @@ struct lwUSB_interface_descriptor_s {
 	uint8_t  bInterfaceProtocol ;
 	uint8_t  iInterface ;
 
-
 };
 
 struct lwUSB_endpoint_descriptor_s {
@@ -240,7 +239,6 @@ struct lwUSB_string_descriptor_s {
 
 	uint8_t  bLength ;
 	uint8_t  bDescriptorType ;
-	char*  bString  ;
 
 };
 
