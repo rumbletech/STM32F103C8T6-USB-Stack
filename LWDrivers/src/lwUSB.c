@@ -6,9 +6,8 @@
 #include "lwUSB_Descriptors.h"
 #include "lwUSB_Opts.h"
 
-#define STM32F103_USB_TRANSCEIVER_STARTUP_US 1u
-#define STM32F103_USB_PERIPHERAL_RESET_DELAY_NS 1u
-#define LWUSB_GET_CONFIG_V_NUM(VALUE) (VALUE-LWUSB_CONFIG_VALUE_START)
+
+#define LWUSB_GET_CONFIG_V_NUM(VALUE) (VALUE-LWUSB_OPTS_CONFIG_VALUE_START)
 
 
 
@@ -68,7 +67,7 @@ struct lwUSB_controller_s {
 	uint8_t active_configuration ;                /* Index of Current Active Configuration */
 	struct lwUSB_setup_data request ;		      /* Pointer to the setup request data */
 	uint8_t isrequest ;                           /* is set when a setup transaction is completed and cleared on the end of the status stage */
-	struct lwUSB_ep_s * lwUSB_eps[LWUSB_EP_NUM];  /* Array of pointers to EPs data structs  */
+	struct lwUSB_ep_s * lwUSB_eps[LWUSB_OPTS_NUM_HW_EPS];  /* Array of pointers to EPs data structs  */
 	struct lwUSB_configuration_s * configurations ;
 	struct lwUSB_string_s *        strings ;
 	uint8_t nextConfigIndex    ;
@@ -102,18 +101,13 @@ static struct lwUSB_transaction_s c_ep_t2 = {
 
 static struct lwUSB_ep_s control_0 = {
 
-			.isInitialized = 0u ,
-			.dir = e_lwUSB_ep_dir_inout ,
-			.ep_num = 0 ,
-			.ep_addr = 0 ,
-			.type = e_lwUSB_ep_type_control ,
-			.kind = e_lwUSB_ep_kind_single_buffered ,
-			.t_in = &c_ep_t1 ,
-			.t_out = &c_ep_t2 ,
-			.tx_state = e_lwUSB_ep_state_disabled ,
-			.rx_state = e_lwUSB_ep_state_valid ,
-			.txb_size = LWUSB_CONTROL_EP_TX_B_SIZE ,
-			.rxb_size = LWUSB_CONTROL_EP_RX_B_SIZE
+			.EP_isInitialized = 0u ,
+			.EP_Type = e_lwUSB_EndPoint_Type_Control ,
+			.EP_Direction = e_lwUSB_EndPoint_Direction_INOUT ,
+			.EP_Number = 0 ,
+			.EP_Address = 0 ,
+			.EP_TxChannel = NULL ,
+			.EP_RxChannel = NULL
 
 	};
 
@@ -122,125 +116,17 @@ static struct lwUSB_controller_s lwUSB_controller = {
 		.isInitialized = 0u ,
 		.lwUSB_device_state = e_lwUSB_controller_state_Default ,
 		.configurations = NULL ,
-		.active_configuration   = NULL ,
+		.active_configuration   = 0U ,
 		.strings = NULL ,
 		.device_addr = 0u ,
 		.isrequest = 0u ,
 		.lwUSB_eps              = {NULL} ,
-		.nextConfigIndex        = LWUSB_CONFIG_VALUE_START  ,
-		.nextInterfaceIndex     = LWUSB_INTERFACE_VALUE_START ,
-		.nextStringIndex        = LWUSB_STRING_VALUE_START
+		.nextConfigIndex        = LWUSB_OPTS_CONFIG_VALUE_START  ,
+		.nextInterfaceIndex     = LWUSB_OPTS_INTERFACE_VALUE_START ,
+		.nextStringIndex        = LWUSB_OPTS_STRING_INDEX_START
 };
 
 
-
-
-
-static inline err_t lwUSB_InitializeTranceivers( void )
-{
-	/* Enable Tranceivers */
-	USB->CNTR &= ~USB_CNTR_PDWN_Msk  ;
-	/* wait for T_startup */
-	lw_waitfor_us(STM32F103_USB_TRANSCEIVER_STARTUP_US);
-	/* Exit Reset State*/
-	USB->CNTR &= ~USB_CNTR_FRES_Msk ;
-	while( USB->CNTR & USB_CNTR_FRES_Msk ) ;
-	/* Clear Pending Interrupts*/
-	USB->ISTR = 0u ;
-
-	return ERR_OK ;
-}
-
-
-static inline err_t lwUSB_PerphReset( void )
-{
-	RCC->APB1RSTR |= RCC_APB1RSTR_USBRST_Msk ;
-	lw_waitfor_ns(STM32F103_USB_PERIPHERAL_RESET_DELAY_NS);
-	RCC->APB1RSTR &= ~(RCC_APB1RSTR_USBRST_Msk);
-	lw_waitfor_ns(STM32F103_USB_PERIPHERAL_RESET_DELAY_NS);
-	return ERR_OK ;
-
-}
-
-
-
-static inline err_t lwUSB_Enable( void )
-{
-	RCC->APB1ENR|= RCC_APB1ENR_USBEN_Msk ;
-	return ERR_OK ;
-}
-
-
-
-static inline err_t lwUSB_Disable( void )
-{
-	RCC->APB1ENR&= ~RCC_APB1ENR_USBEN_Msk ;
-	return ERR_OK ;
-}
-
-static inline err_t lwUSB_Enable_NVIC_IRQ( void )
-{
-	__NVIC_SetPriority(USB_HP_IRQn ,NVIC_EncodePriority(LW_PRIO_GROUP, 1UL , 0UL) );
-	__NVIC_EnableIRQ(USB_HP_IRQn);
-	__NVIC_SetPriority(USB_LP_IRQn ,NVIC_EncodePriority(LW_PRIO_GROUP, 2UL , 0UL) );
-	__NVIC_EnableIRQ(USB_LP_IRQn);
-	__NVIC_SetPriority(USBWakeUp_IRQn ,NVIC_EncodePriority(LW_PRIO_GROUP, 1UL , 0UL) );
-	__NVIC_EnableIRQ(USBWakeUp_IRQn);
-
-	return ERR_OK ;
-
-}
-
-static inline err_t lwUSB_Disable_NVIC_IRQ( void )
-{
-	__NVIC_DisableIRQ(USB_HP_IRQn);
-	__NVIC_DisableIRQ(USB_LP_IRQn);
-	__NVIC_DisableIRQ(USBWakeUp_IRQn);
-
-	return ERR_OK ;
-}
-
-static inline err_t lwUSB_Clear_NVIC_IRQ( void )
-{
-	__NVIC_ClearPendingIRQ(USB_HP_IRQn);
-	__NVIC_ClearPendingIRQ(USB_LP_IRQn);
-	__NVIC_ClearPendingIRQ(USBWakeUp_IRQn);
-
-	return ERR_OK ;
-}
-static inline err_t  lwUSB_EnableUSBFunction ( void )
-{
-	USB->DADDR |= (USB_DADDR_EF_Msk) ;
-	return ERR_OK ;
-}
-
-
-static inline err_t lwUSB_DisableUSBFunction ( void )
-{
-    USB->DADDR &= ~(USB_DADDR_EF_Msk);
-    return ERR_OK ;
-}
-
-err_t lwUSB_HardwareReset( void )
-{
-	lwUSB_Disable_NVIC_IRQ();
-	lwUSB_Clear_NVIC_IRQ();
-	lwUSB_Disable();
-	lwUSB_PerphReset();
-	lwUSB_Enable();
-	lwUSB_InitializeTranceivers();
-	lwUSB_Enable_NVIC_IRQ();
-
-	return ERR_OK ;
-}
-
-
-static inline err_t lwUSB_HW_SetAddress ( uint8_t addr )
-{
-	USB->DADDR &= ~ ( USB_DADDR_ADD_Msk );
-	USB->DADDR |= ( addr << USB_DADDR_ADD_Pos );
-	return ERR_OK ;
-}
 
 
 struct lwUSB_string_s * lwUSB_FindStringbyIndex ( uint8_t stringID ){
@@ -321,9 +207,9 @@ err_t lwUSB_Reset( void )
 		lwUSB_controller.lwUSB_eps[0] = NULL ;
 		return ERR_FAULT ;
 	}
-	lwUSB_controller.lwUSB_eps[0]->isInitialized++;
+	lwUSB_controller.lwUSB_eps[0]->EP_isInitialized++;
 
-	lwUSB_EnableUSBFunction();
+	lwUSB_hwEnable();
 
 	return ERR_OK ;
 
@@ -360,35 +246,21 @@ err_t lwUSB_Init( void )
 
 }
 
-
-err_t lwUSB_LoadPacket( uint8_t * ptr , uint32_t len  , struct lwUSB_ep_s * ep )
+//todo make err Generic to the stack
+err_t lwUSB_LoadPacket( struct lwUSB_ep_s * EndPoint  , uint8_t * DataPtr , uint32_t Length  )
 {
 
-	LW_ASSERT( ep != NULL );
-	LW_ASSERT( ep->isInitialized != 0u ) ;
+	if ( !EndPoint || !EndPoint->EP_isInitialized ){
+		return ERR_NULL ;
+	}
 
-
-	if ( !( len <= ep->txb_size ) ){
+	if ( EndPoint->EP_TxChannel->EP_Size <  Length                  ||
+		 EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_IN    ||
+		 EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_INOUT ){
 		return ERR_FAULT ;
 	}
 
-	if(!(ep->dir == e_lwUSB_ep_dir_s_in ||
-			   ep->dir == e_lwUSB_ep_dir_inout ||
-			   ep->dir == e_lwUSB_ep_dir_d_in ) ){
-		return ERR_FAULT ;
-	}
-
-	struct lwUSB_btable_ep_entry_s * entry = lwUSB_pmaGetEntry( ep->ep_num );
-	entry->tx_buff.count = len ;
-
-	if ( !len ){
-		return ERR_OK ;
-	}
-
-	//todo support double buffers
-
-	lwUSB_pmaWrite( ptr, len, ep->txb_addr );
-	return  ERR_OK ;
+	return  lwUSB_hwWriteData( EndPoint->EP_Number , DataPtr , Length ) ;
 
 }
 
@@ -397,77 +269,118 @@ static inline err_t lwUSB_SetAddress ( uint8_t  addr )
 {
 	lwUSB_controller.device_addr = addr ;
 	lwUSB_controller.lwUSB_device_state = e_lwUSB_controller_state_address ;
-	lwUSB_HW_SetAddress(addr);
+	lwUSB_hwSetAddress(addr);
 	return ERR_OK ;
 }
-static inline err_t lwUSB_Protocol_Stall ( struct lwUSB_ep_s * ep )
+static  err_t lwUSB_Protocol_Stall ( struct lwUSB_ep_s * EndPoint )
 {
-	LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(ep->ep_num) , e_lwUSB_ep_state_stall );
-	LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(ep->ep_num) , e_lwUSB_ep_state_stall );
+	if ( EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_IN ){
+		lwUSB_hwSetTXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
+	}
+	else if ( EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_OUT ){
+		lwUSB_hwSetRXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
+	}
+	else if ( EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_INOUT ){
+		lwUSB_hwSetTXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
+		lwUSB_hwSetRXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
+	}
 	return ERR_OK ;
 }
 
-static inline err_t lwUSB_Ready_ZLP( struct lwUSB_ep_s * ep  )
+
+static  err_t lwUSB_DisableChannels ( struct lwUSB_ep_s * EndPoint )
+{
+
+	lwUSB_hwSetTXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Disabled);
+	lwUSB_hwSetRXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Disabled);
+
+	return ERR_OK ;
+}
+static inline err_t lwUSB_Ready_ZLP( struct lwUSB_ep_s * EndPoint  )
 {
 	static const uint32_t zlp = 0xa5a5a5a5 ;
-	lwUSB_LoadPacket( (void*)zlp , 0u , ep);
+	lwUSB_LoadPacket( EndPoint ,  (void*)zlp , 0u );
 	return ERR_OK ;
 }
 
 
 
 
-err_t lwUSB_Set_Transaction_IN_State ( struct lwUSB_ep_s * ep , e_lwUSB_transaction_state state  )
+err_t lwUSB_Set_Transaction_IN_State ( struct lwUSB_ep_s * EndPoint , e_lwUSB_transaction_state State  )
 {
-	ep->t_in->current_state = state ;
+	EndPoint->EP_TxChannel->EP_Transaction->current_state = State ;
 	return ERR_OK ;
 }
 
 /* This Function Registers an IN Transaction on the EP */
-err_t lwUSB_Transfer_IN(struct lwUSB_ep_s * ep ,  uint8_t * ptr , uint32_t length  )
+err_t lwUSB_Transfer_IN(struct lwUSB_ep_s * EndPoint ,  uint8_t * DataPtr , uint32_t Length  )
 {
-	LW_ASSERT(ep);
-	LW_ASSERT(ptr);
+	if ( !EndPoint || !DataPtr || !EndPoint->EP_isInitialized ){
+		return ERR_NULL ;
+	}
 	/* Make Sure EP is Initialized , and has an IN channel */
-	if ( !(ep->dir == e_lwUSB_ep_dir_inout ||  ep->dir == e_lwUSB_ep_dir_d_in) )
-	{
+	if ( !(EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_IN ||
+		   EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_INOUT ) ){
 		return ERR_FAULT ;
 	}
 
-	if ( ep->isInitialized == 0 )
-	{
-		return ERR_FAULT ;
-	}
-	//todo extend the linked list idea
-	if ( ep->t_in == NULL || ep->t_in->current_state == e_lwUSB_transaction_state_null )
-	{
+	if (!EndPoint->EP_TxChannel->EP_Transaction  ||
+		 EndPoint->EP_TxChannel->EP_Transaction->current_state == e_lwUSB_transaction_state_null ){
 		return ERR_FAULT ;
 	}
 
-	ep->t_in->payload_buffer = ptr ;
-	ep->t_in->payload_length = length ;
-
-	if ( length <= ep->txb_size )
-	{
+	if ( EndPoint->EP_TxChannel->EP_Size < Length ){
 		/* Whole payload in one transaction */
-		lwUSB_LoadPacket( ptr , length , ep);
-		ep->t_in->payload_ptr = length ;
+		lwUSB_LoadPacket( EndPoint , DataPtr , Length );
+		EndPoint->EP_TxChannel->EP_Transaction->payload_ptr = Length ;
 	}
 	else{
-		lwUSB_LoadPacket( ptr , ep->txb_size  , ep);
-		ep->t_in->payload_ptr = ep->txb_size ;
+		lwUSB_LoadPacket( EndPoint , DataPtr , EndPoint->EP_TxChannel->EP_Size );
+		EndPoint->EP_TxChannel->EP_Transaction->payload_ptr = EndPoint->EP_TxChannel->EP_Size ;
 	}
 
-	LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(ep->ep_num) , e_lwUSB_ep_state_valid );
-	LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(ep->ep_num) , e_lwUSB_ep_state_stall );
+	EndPoint->EP_TxChannel->EP_Transaction->payload_buffer = DataPtr ;
+	EndPoint->EP_TxChannel->EP_Transaction->payload_length = Length ;
 
-	ep->t_in->previous_state = ep->t_in->current_state ;
-	ep->t_in->current_state  = e_lwUSB_transaction_state_data_in ;
+
+	lwUSB_hwSetTXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
+
+	if ( EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_INOUT  ){
+		lwUSB_hwSetRXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
+	}
+	EndPoint->EP_TxChannel->EP_Transaction->previous_state = EndPoint->EP_TxChannel->EP_Transaction->current_state ;
+	EndPoint->EP_TxChannel->EP_Transaction->current_state  = e_lwUSB_transaction_state_data_in ;
 
 	return ERR_OK ;
 
 
 }
+
+
+
+int32_t lwUSB_Transfer_OUT(struct lwUSB_ep_s * EndPoint ,  uint8_t * DataPtr  )
+{
+	if ( !EndPoint || !DataPtr || !EndPoint->EP_isInitialized ){
+		return ERR_NULL ;
+	}
+	/* Make Sure EP is Initialized , and has an IN channel */
+	if ( !(EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_OUT ||
+		   EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_INOUT ) ){
+		return ERR_FAULT ;
+	}
+
+	if (!EndPoint->EP_RxChannel->EP_Transaction  ||
+		 EndPoint->EP_RxChannel->EP_Transaction->current_state == e_lwUSB_transaction_state_null ){
+		return ERR_FAULT ;
+	}
+
+	//todo handle OUT Transaction
+	return ERR_OK ;
+
+
+}
+
+
 
 static err_t lwUSB_Copy_Configuration ( uint8_t * dest , struct lwUSB_configuration_s * config )
 {
@@ -500,40 +413,69 @@ static err_t lwUSB_Copy_Configuration ( uint8_t * dest , struct lwUSB_configurat
 	return ERR_OK ;
 
 }
-static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
+
+static err_t lwUSB_GetEndPointByAddress( uint8_t EPn ){
+
+	for ( int32_t i = 0 ; i < LWUSB_OPTS_NUM_HW_EPS ; i++ ){
+		if ( lwUSB_controller.lwUSB_eps[i] && lwUSB_controller.lwUSB_eps[i]->EP_isInitialized ){
+			if ( lwUSB_controller.lwUSB_eps[i]->EP_Address ==  EPn ){
+				return i ;
+			}
+		}
+	}
+
+	return ERR_FAULT ;
+}
+static err_t lwUSB_Handle_CTR ( uint8_t EPn )
 {
+	int32_t state = lwUSB_GetEndPointByAddress( EPn );
+	/* Doesn't Exist or Invalid EP Num */
+	if ( state < 0 || state > LWUSB_OPTS_NUM_HW_EPS-1 ){
+
+		return ERR_FAULT ;
+	}
+	uint8_t EndPointNumber = (uint8_t)state ;
 	//todo remove
-	LW_ASSERT( ep_num <= LWUSB_EP_NUM-1 );
+	volatile uint32_t unused ;
+	LW_ASSERT( EndPointNumber <= LWUSB_OPTS_NUM_HW_EPS-1 );
 	LW_ASSERT( lwUSB_controller.isInitialized != 0u );
-	LW_ASSERT( lwUSB_controller.lwUSB_eps[ep_num] != NULL );
-	LW_ASSERT( lwUSB_controller.lwUSB_eps[ep_num]->isInitialized != 0u );
+	LW_ASSERT( lwUSB_controller.lwUSB_eps[EndPointNumber] != NULL );
+	LW_ASSERT( lwUSB_controller.lwUSB_eps[EndPointNumber]->EP_isInitialized != 0u );
 
-	int unused = 1 ;
-	uint32_t* epxr = LWUSB_GET_EPR(ep_num);
-	struct lwUSB_ep_s * curr_ep = lwUSB_controller.lwUSB_eps[ep_num] ;
+	struct lwUSB_ep_s * EndPoint = lwUSB_controller.lwUSB_eps[EndPointNumber] ;
 
-	if( !curr_ep || curr_ep->isInitialized == 0u )
-	{
-		//todo disable the EP
-		LWUSB_WRITE_STAT_TX(epxr , e_lwUSB_ep_state_disabled);
-		LWUSB_WRITE_STAT_RX(epxr , e_lwUSB_ep_state_disabled);
-		*epxr = 0u ;
+	if( !EndPoint || EndPoint->EP_isInitialized == 0u ){
+
+		lwUSB_hwSetTXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Disabled);
+		lwUSB_hwSetRXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Disabled);
 		return ERR_FAULT ;
 	}
 
 
 
-	uint32_t setup_completed = *(epxr) & USB_EP0R_SETUP_Msk ;
-	uint32_t out_completed    = *(epxr) & USB_EP0R_CTR_RX_Msk ;
-	uint32_t in_completed  = *(epxr) & USB_EP0R_CTR_TX_Msk ;
+	uint32_t setup_completed  = lwUSB_hwIsSetupFlag(EndPointNumber);
+	uint32_t out_completed    = lwUSB_hwIsOUTFlag(EndPointNumber);
+	uint32_t in_completed     = lwUSB_hwIsINFlag(EndPointNumber);
 
 	if ( setup_completed ){
-		LWUSB_CLEAR_CTR_RX(epxr) ;
-		struct lwUSB_btable_ep_entry_s * entry = lwUSB_pmaGetEntry(ep_num);
-		uint16_t t_len = entry->rx_buff.count & USB_COUNT0_RX_COUNT0_RX_Msk ;
-		lwUSB_pmaRead( (uint8_t*)&lwUSB_controller.request , t_len , curr_ep->rxb_addr );
-		struct lwUSB_setup_data * request = &lwUSB_controller.request ;
+		lwUSB_hwClearSetupFlag(EndPointNumber);
+	}
+	else if ( out_completed ){
+		lwUSB_hwClearOUTFlag(EndPointNumber);
+	}
+	else if ( in_completed ){
+		lwUSB_hwClearINFlag(EndPointNumber);
+	}
+	else{
+		lwUSB_Protocol_Stall(EndPoint);
+		LW_DEBUG("CTR Flag Raised with no source ");
+		return ERR_FAULT ;
+	}
 
+	if ( setup_completed ){
+		uint16_t request_length = lwUSB_hwReadData( EndPoint->EP_Number , (uint8_t*)&lwUSB_controller.request  );
+		LW_ASSERT( request_length == sizeof(struct lwUSB_setup_data));
+		struct lwUSB_setup_data * request = &lwUSB_controller.request ;
 
 		switch( request->bRequest )
 		{
@@ -561,7 +503,7 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 				if ( lwUSB_controller.lwUSB_device_state == e_lwUSB_controller_state_Default ){
 					lwUSB_controller.device_addr = (uint8_t)request->wValue ;
 					/* Transfer a ZLP */
-					lwUSB_Transfer_IN(curr_ep, (void*)(!NULL) , 0u);
+					lwUSB_Transfer_IN(EndPoint, (void*)(!NULL) , 0u);
 				}
 				else{
 					//todo handler
@@ -585,9 +527,9 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 				 request->bmRequestType.Recipient == BMREQUEST_RECIPIENT_DEVICE &&
 				 request->bmRequestType.RequestType == BMREQUEST_TYPE_STANDARD ){
 
-					lwUSB_Set_Transaction_IN_State( curr_ep , e_lwUSB_transaction_state_setup_stage );
+					lwUSB_Set_Transaction_IN_State( EndPoint , e_lwUSB_transaction_state_setup_stage );
 					if ( request->descriptorType == e_lwUSB_bdescriptor_type_device ){
-						lwUSB_Transfer_IN( curr_ep , (uint8_t*)&lwUSB_Device_Descriptor , sizeof(struct lwUSB_device_descriptor_s ) ) ;
+						lwUSB_Transfer_IN( EndPoint , (uint8_t*)&lwUSB_Device_Descriptor , sizeof(struct lwUSB_device_descriptor_s ) ) ;
 					}
 					else if ( request->descriptorType == e_lwUSB_bdescriptor_type_configuration )
 					{
@@ -602,14 +544,13 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 						if ( !p ){
 							/* No such configuration */
 							/*todo  check handling  */
-							LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
-							LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
+							lwUSB_Protocol_Stall(EndPoint);
 						}
 						else{
 							uint8_t cbuff[p->d_configuration->wTotalLength];
 							lwUSB_Copy_Configuration(cbuff, p);
 							/* Send Configuration Descriptor */
-							lwUSB_Transfer_IN( curr_ep , cbuff , p->d_configuration->wTotalLength  ) ;
+							lwUSB_Transfer_IN( EndPoint , cbuff , p->d_configuration->wTotalLength  ) ;
 
 						}
 					}
@@ -619,11 +560,10 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 
 						struct lwUSB_string_s * s = lwUSB_FindStringbyIndex(request->descriptorIndex);
 						if ( !s ){
-							LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
-							LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
+							lwUSB_Protocol_Stall(EndPoint);
 							break ;
 						}
-						lwUSB_Transfer_IN( curr_ep , (uint8_t*)s->d_string , s->d_string->bLength  ) ;
+						lwUSB_Transfer_IN( EndPoint , (uint8_t*)s->d_string , s->d_string->bLength  ) ;
 
 					}
 					else if ( request->descriptorType == e_lwUSB_bdescriptor_type_device_qualifier )
@@ -633,8 +573,7 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 					}
 					else{
 
-						LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
-						LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
+						lwUSB_Protocol_Stall(EndPoint);
 					}
 
 			}
@@ -681,51 +620,49 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 	}
 	else if ( out_completed ){
 
-		LWUSB_CLEAR_CTR_RX(epxr) ;
 
-		if( curr_ep->type == e_lwUSB_ep_type_control ){
+
+		if( EndPoint->EP_Type == e_lwUSB_EndPoint_Type_Control ){
 
 			/* Status received for now todo */
 			lwUSB_controller.isrequest = 0u ;
-			LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
-			LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
+			lwUSB_Protocol_Stall(EndPoint);
 
 		}
 
 	}
 	else if ( in_completed ){
 
-		LWUSB_CLEAR_CTR_TX(epxr) ;
-		if ( curr_ep->t_in->payload_ptr < curr_ep->t_in->payload_length  ){
+		if ( EndPoint->EP_TxChannel->EP_Transaction->payload_ptr < EndPoint->EP_TxChannel->EP_Transaction->payload_length  ){
 			/* We need to load another packet , since more stages are to come  */
-			lwUSB_Transfer_IN(curr_ep, &curr_ep->t_in->payload_buffer[curr_ep->t_in->payload_ptr] , curr_ep->t_in->payload_length - curr_ep->t_in->payload_ptr );
+			lwUSB_Transfer_IN(EndPoint, &EndPoint->EP_TxChannel->EP_Transaction->payload_buffer[EndPoint->EP_TxChannel->EP_Transaction->payload_ptr] , EndPoint->EP_TxChannel->EP_Transaction->payload_length - EndPoint->EP_TxChannel->EP_Transaction->payload_ptr );
 		}
 		else {
 			/* IN Completed */
-			if( curr_ep->type == e_lwUSB_ep_type_control )
+			if( EndPoint->EP_Type == e_lwUSB_EndPoint_Type_Control )
 			{
 			//	if ( curr_ep->t_in->previous_state == e_lwUSB_transaction_state_setup_stage ){
 					//assume that all control ep transactions came from setup stage 183
 				 	// we must now receive the ACK in the Status Stage
 				if (  lwUSB_controller.isrequest && lwUSB_controller.request.bRequest == e_lwUSB_setup_request_set_address ){
 					/* ZLP Handle , means an ACK in the Status Stage */
-					if ( curr_ep->t_in->payload_length == 0u ) {
+					if ( EndPoint->EP_TxChannel->EP_Transaction->payload_length == 0u ) {
 						lwUSB_SetAddress(lwUSB_controller.device_addr);
 						lwUSB_controller.lwUSB_device_state = e_lwUSB_controller_state_address ;
-						LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
-						LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall);
+						lwUSB_Protocol_Stall(EndPoint);
 						lwUSB_controller.isrequest = 0u ;
 
 
 					}
 					else{
 						/* NON ZLP Status Stage */
+						lwUSB_Protocol_Stall(EndPoint);
 					}
 
 				}
 				else{
-				LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_stall );
-				LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(curr_ep->ep_num) , e_lwUSB_ep_state_valid );
+					lwUSB_hwSetTXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
+					lwUSB_hwSetRXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Valid);
 				}
 
 		//		}
@@ -746,119 +683,44 @@ static err_t lwUSB_Handle_CTR ( uint8_t ep_num )
 
 //todo only 2 byte sized blocks are used make it work with both 32 and 2
 //todo this function needs a visist with regards to where it fits in the stack
-err_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * lwusb_ep )
+err_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * EndPoint )
 {
-	LW_ASSERT( lwusb_ep != NULL ) ;
-	LW_ASSERT( lwusb_ep->ep_num <= LWUSB_EP_NUM-1 );
-	LW_ASSERT( lwusb_ep->type <= LWUSB_EP_TYPE_RANGE );
-	LW_ASSERT( lwusb_ep->kind <= LWUSB_EP_KIND_RANGE );
+	LW_ASSERT( EndPoint != NULL ) ;
+	LW_ASSERT( EndPoint->EP_Number <= LWUSB_OPTS_NUM_HW_EPS-1 );
+	LW_ASSERT( EndPoint->EP_Type <= LWUSB_EP_TYPE_MAX );
 
+	/* Disable Both Channels */
+	lwUSB_DisableChannels(EndPoint);
 
-	lwusb_ep->rxb_addr = NULL ;
-	lwusb_ep->txb_addr = NULL ;
+	/* Configure */
+	lwUSB_ConfigureEndPoint(EndPoint->EP_Number,
+			                EndPoint->EP_Address,
+							EndPoint->EP_Type,
+							EndPoint->EP_Direction );
 
-	struct lwUSB_btable_ep_entry_s entry ;
-
-	entry.tx_buff.count = 0u ;
-	entry.rx_buff.count = 0u ;
-	entry.rx_buff_d.count = 0u ;
-	entry.tx_buff_d.count = 0u ;
-
-
-	if ( lwusb_ep->kind == e_lwUSB_ep_kind_single_buffered )
-	{
-		if ( lwusb_ep->dir == e_lwUSB_ep_dir_s_in || lwusb_ep->dir == e_lwUSB_ep_dir_inout )
-		{
-			lwusb_ep->txb_addr = (uint32_t*) lwUSB_Allocate(lwusb_ep->ep_num, lwusb_ep->txb_size );
-			entry.tx_buff.addr = UINT32T_CAST(lwusb_ep->txb_addr);
-			if ( lwusb_ep->txb_addr == NULL )
-			{
-				return ERR_NULL ;
-			}
-
+	/* Allocate */
+	if ( EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_IN ||
+		 EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_INOUT ){
+		EndPoint->EP_TxChannel->EP_BufferHandle = (uint32_t*) lwUSB_Allocate( EndPoint->EP_Number , EndPoint->EP_TxChannel->EP_Size );
+		if ( EndPoint->EP_TxChannel->EP_BufferHandle == NULL ){
+			return ERR_NULL ;
 		}
-		if (lwusb_ep->dir == e_lwUSB_ep_dir_s_out || lwusb_ep->dir == e_lwUSB_ep_dir_inout )
-		{
-			lwusb_ep->rxb_addr  = (uint32_t*) lwUSB_Allocate(lwusb_ep->ep_num, lwusb_ep->rxb_size );
-			entry.rx_buff.addr  = UINT32T_CAST(lwusb_ep->rxb_addr);
-			entry.rx_buff.count =  ((lwusb_ep->rxb_size/2) <<  USB_COUNT0_RX_NUM_BLOCK_Pos) ;
-			if ( lwusb_ep->rxb_addr == NULL )
-			{
-				return ERR_NULL ;
-			}
-		}
+		lwUSB_hwSetTXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
 
 	}
-	else{
-
-		if ( lwusb_ep->dir == e_lwUSB_ep_dir_d_in )
-		{
-			lwusb_ep->txb_addr   = (uint32_t*) lwUSB_Allocate(lwusb_ep->ep_num, lwusb_ep->txb_size );
-			lwusb_ep->txdb_addr  = (uint32_t*) lwUSB_Allocate(lwusb_ep->ep_num, lwusb_ep->txdb_size );
-			entry.tx_buff.addr   = UINT32T_CAST(lwusb_ep->txb_addr);
-			entry.tx_buff_d.addr = UINT32T_CAST(lwusb_ep->txdb_addr);
-			if ( lwusb_ep->txb_addr == NULL || lwusb_ep->txdb_addr  == NULL )
-			{
-				return ERR_NULL ;
-			}
-
+	if ( EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_OUT ||
+		 EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_INOUT ){
+		EndPoint->EP_TxChannel->EP_BufferHandle  = (uint32_t*) lwUSB_Allocate( EndPoint->EP_Number , EndPoint->EP_RxChannel->EP_Size );
+		//todo move the 2 lines below to allocator
+//		entry.rx_buff.addr  = UINT32T_CAST(lwusb_ep->rxb_addr);
+//		entry.rx_buff.count =  ((lwusb_ep->rxb_size/2) <<  USB_COUNT0_RX_NUM_BLOCK_Pos) ;
+		if ( EndPoint->EP_RxChannel->EP_BufferHandle == NULL ){
+			//todo here in case of inout eps , we must free the successfully allocated direction
+			//or handle it
+			return ERR_NULL ;
 		}
-		else if ( lwusb_ep->dir == e_lwUSB_ep_dir_d_out )
-		{
-			lwusb_ep->rxb_addr   = (uint32_t*) lwUSB_Allocate(lwusb_ep->ep_num, lwusb_ep->rxb_size );
-			lwusb_ep->rxdb_addr  = (uint32_t*) lwUSB_Allocate(lwusb_ep->ep_num, lwusb_ep->rxdb_size );
-			entry.rx_buff.addr   = UINT32T_CAST(lwusb_ep->rxb_addr);
-			entry.rx_buff_d.addr = UINT32T_CAST(lwusb_ep->rxdb_addr);
-			entry.rx_buff.count =  ((lwusb_ep->rxb_size/2) <<  USB_COUNT0_RX_NUM_BLOCK_Pos) ;
-			entry.rx_buff_d.count =  ((lwusb_ep->rxdb_size/2) <<  USB_COUNT0_RX_NUM_BLOCK_Pos) ;
-			if ( lwusb_ep->rxb_addr == NULL || lwusb_ep->rxdb_addr == NULL )
-			{
-				return ERR_NULL ;
-			}
-
-		}
+		lwUSB_hwSetRXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
 	}
-
-	/* Register Entries in BTABLE and Initialize EP specific registers */
-
-	uint32_t * epxr = LWUSB_GET_EPR(lwusb_ep->ep_num);
-
-	/* Setup Btable entry */
-	int32_t btable_s = lwUSB_pmaWriteEntry( lwusb_ep->ep_num  , &entry );
-
-	if ( btable_s != ERR_OK )
-	{
-		return ERR_FAULT ;
-	}
-
-	/* Setup EP */
-
-	*(epxr) = (~( USB_EP0R_EP_TYPE_Msk | USB_EP0R_EP_KIND_Msk | USB_EP0R_EA_Msk ) )&LWUSB_SAVE_EP_TOGG;
-
-	*(epxr) = ((lwusb_ep->type << USB_EP0R_EP_TYPE_Pos ) |
-			   (lwusb_ep->kind << USB_EP0R_EP_KIND_Pos ) |
-			   (lwusb_ep->ep_addr << USB_EP0R_EA_Pos   )
-				)&LWUSB_SAVE_EP_TOGG;
-
-	if (( lwusb_ep->dir == e_lwUSB_ep_dir_inout && lwusb_ep->kind == e_lwUSB_ep_kind_single_buffered ) ||  lwusb_ep->kind == e_lwUSB_ep_kind_double_buffered )
-	{
-		LWUSB_WRITE_STAT_RX(epxr , lwusb_ep->rx_state );
-		LWUSB_WRITE_STAT_TX(epxr , lwusb_ep->tx_state );
-
-	}
-	else {
-		if ( lwusb_ep->dir == e_lwUSB_ep_dir_s_in )
-		{
-			LWUSB_WRITE_STAT_RX(epxr , e_lwUSB_ep_state_disabled );
-			LWUSB_WRITE_STAT_TX(epxr , lwusb_ep->tx_state );
-
-		}
-		else{
-			LWUSB_WRITE_STAT_RX(epxr , lwusb_ep->rx_state );
-			LWUSB_WRITE_STAT_TX(epxr , e_lwUSB_ep_state_disabled);
-		}
-	}
-
 
 	return ERR_OK ;
 
@@ -965,7 +827,7 @@ struct lwUSB_configuration_s *  lwUSB_CreateConfiguration ( uint8_t * IString ){
 	d_config->wTotalLength        = 0u ;
 	d_config->bNumInterfaces      = 0u ;
 	d_config->bDescriptorType     = e_lwUSB_bdescriptor_type_configuration ;
-	d_config->bConfigurationValue = lwUSB_next_config_value++ ;
+	d_config->bConfigurationValue = lwUSB_controller.nextConfigIndex++ ;
 	d_config->iConfiguration      = StringIndex ;
 
 
@@ -1088,9 +950,9 @@ void USB_LP_CAN_RX0_IRQHandler ( void )
 		lwUSB_Reset();
 		// register ep1
 		if ( !(debug++) ){
-		struct lwUSB_configuration_s * config_1 = lwUSB_InitializeConfiguration(&lwUSB_Configuration_Descriptor );
-		struct lwUSB_interface_s     * intf_1   = lwUSB_InitializeInterface(&lwUSB_interface1_Descriptor);
-		struct lwUSB_endpoint_s      * ep_1     = lwUSB_InitializeEndpoint(&lwUSB_endpoint1_Descriptor);
+		struct lwUSB_configuration_s * config_1 = lwUSB_CreateConfiguration( "1stConfig" );
+		struct lwUSB_interface_s     * intf_1   = lwUSB_CreateInterface("1stIntf");
+		struct lwUSB_endpoint_s      * ep_1     = lwUSB_CreateEndpoint(32, e_lwUSB_EndPoint_Type_Bulk, e_lwUSB_EndPoint_Direction_IN , 10 );
 		lwUSB_RegisterEndpoint(ep_1, intf_1);
 		lwUSB_RegisterInterface(intf_1, config_1);
 		lwUSB_RegisterConfiguration(config_1);

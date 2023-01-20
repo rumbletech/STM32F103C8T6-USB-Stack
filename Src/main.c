@@ -19,6 +19,7 @@ volatile int32_t usb_state = USB_STATE_IDLE ;
  * todo implement ring buffers for rx/tx
  * todo figure out correct handling for todos in the code .
  * todo REFACTOR THE UGLY CODE -- SIMPLIFY
+ * todo check status table in the specifications
  */
 
 int main(void)

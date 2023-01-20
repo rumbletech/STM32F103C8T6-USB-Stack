@@ -29,9 +29,7 @@
 
 
 
-#define LWUSB_EP_TYPE_RANGE 3u
-#define LWUSB_EP_KIND_RANGE 1u
-#define LWUSB_SAVE_EP_TOGG (~(USB_EP0R_DTOG_RX_Msk|USB_EP0R_DTOG_TX_Msk|USB_EP0R_STAT_RX_Msk|USB_EP0R_STAT_TX_Msk))
+
 #define LWUSB_ISOCHRONOUS_MAX_PERIOD_MS 32768u
 #define LWUSB_ENDPOINT_MAX_PERIOD_MS 255u
 #define LWUSB_EP_TYPE_MAX 3u
@@ -41,12 +39,7 @@
 
 /* Macros*/
 
-#define LWUSB_WRITE_DTOG_RX(EPXR,DTOG) *(EPXR) = (( ((*EPXR)&LWUSB_SAVE_EP_TOGG)^(DTOG << USB_EP0R_DTOG_RX_Pos) ) ) ;
-#define LWUSB_WRITE_STAT_RX(EPXR,STAT)  *(EPXR) = (( (*EPXR)^(STAT << USB_EP0R_STAT_RX_Pos) )&((LWUSB_SAVE_EP_TOGG|USB_EP0R_STAT_RX_Msk)) );
-#define LWUSB_WRITE_STAT_TX(EPXR,STAT)  *(EPXR) = (( (*EPXR)^(STAT << USB_EP0R_STAT_TX_Pos) )&((LWUSB_SAVE_EP_TOGG|USB_EP0R_STAT_TX_Msk)) );
-#define LWUSB_WRITE_DTOG_TX(EPXR,DTOG) *(EPXR) = (( ((*EPXR)&LWUSB_SAVE_EP_TOGG)^(DTOG << USB_EP0R_DTOG_TX_Pos) ) ) ;
-#define LWUSB_CLEAR_CTR_RX(EPXR)       *(EPXR) = (((*EPXR)&(~USB_EP0R_CTR_RX_Msk))&LWUSB_SAVE_EP_TOGG)
-#define LWUSB_CLEAR_CTR_TX(EPXR)       *(EPXR) = (((*EPXR)&(~USB_EP0R_CTR_TX_Msk))&LWUSB_SAVE_EP_TOGG)
+
 
 
 
@@ -138,7 +131,7 @@ typedef enum {
 
 struct lwUSB_transaction_s {
 	/* Defines Transactions */
-	uint8_t* payload_buffer                  ;						/* Pointer to the Buffer to Transmit From */
+	uint8_t* payload_buffer                  ;						/* Pointer to the Buffer to Transmit From or Receive into */
 	uint32_t payload_length                  ;						/* Total Transaction Length */
 	uint32_t payload_ptr                     ;						/* Retains Completed Bytes Status */
 	e_lwUSB_transaction_state current_state  ;						/* State of the Transaciton */
@@ -149,9 +142,9 @@ struct lwUSB_transaction_s {
 
 struct lwUSB_ep_ch_s {
 	/* Low Level Communication Channel for EndPoints */
-	e_lwUSB_ep_state 			EP_State ;							/* Current State */
+	e_lwUSB_EndPoint_State 	    EP_State ;							/* Current State */
 	uint16_t         			EP_Size ;							/* Endpoint Buffer Size */
-	uint32_t *       			EP_BufferHandle ;					/* Pointer to the Endpoint's Allocated buffer */
+	uint8_t *       			EP_BufferHandle ;					/* Pointer to the Endpoint's Allocated buffer */
 	struct lwUSB_transaction_s* EP_Transaction ;					/* Pointer to the Current Running Transaction on the Endpoint */
 };
 
@@ -196,29 +189,29 @@ int32_t lwUSB_hwMemoryReset( void );
 
 /* This Function Initializes an EndPoint
  * -it should Create Valid Packet Buffer Handles for the EndPoint */
-int32_t lwUSB_hwInitializeEP( lwUSB_btable_ep_entry_s * lwEP );
+int32_t lwUSB_hwInitializeEP( struct lwUSB_ep_s * lwEP );
 
 
 /* This Function Writes Data to an EndPoint Channel through its already Initialized Packet Memory Handle
  */
-int32_t lwUSB_hwWriteData( lwUSB_btable_ep_entry_s * lwEP , uint8_t * lwData , uint16_t lwLen );
+int32_t lwUSB_hwWriteData( uint8_t lwEPNum , uint8_t * lwData , uint16_t lwLen );
 
 
 /* This Function Reads Data from an EndPoint Channel through its already Initialized Packet Memory Handle
  */
-int32_t lwUSB_hwReadData(  lwUSB_btable_ep_entry_s * lwEP , uint8_t * lwData , uint16_t lwLen );
+int32_t lwUSB_hwReadData( uint8_t lwEPNum , uint8_t* lwData );
 
 /* This Function Sets the Address of the Device */
 int32_t lwUSB_hwSetAddress( uint8_t Address );
 
 /* This Function Sets Status return on the next IN Transaction */
 
-int32_t  lwUSB_hwSetTXResponse ( e_lwUSB_EndPoint_State Resp );
+int32_t  lwUSB_hwSetTXResponse ( uint8_t lwEPNum ,  uint8_t lwResp );
 
 
 /* This Function Sets Status return on the next OUT Transaction */
 
-int32_t  lwUSB_hwSetRXResponse ( e_lwUSB_EndPoint_State Resp );
+int32_t  lwUSB_hwSetRXResponse ( uint8_t lwEPNum  ,  uint8_t lwResp );
 
 
 /* This Function Sets Data Toggle in IN Data Stages */
@@ -239,18 +232,26 @@ int32_t  lwUSB_hwSetRXDataToggle ( void  );
 int32_t  lwUSB_hwClearRXDataToggle ( void  );
 
 
-/* This Function Clears Transaction TX Complete Flag */
+/* This Function returns True if the HW Detected and Completed a Setup Stage after receiving  a PID Token with Setup */
 
-int32_t  lwUSB_hwClearTXTransactionComplete ( void  );
+int32_t  lwUSB_hwIsSetupFlag (  uint8_t lwEPNum  );
 
-/* This Function Clears Transaction RX Complete Flag */
+/* This Function Tells if the Transaction that was completed was an IN */
 
-int32_t  lwUSB_hwClearRXTransactionComplete ( void  );
+int32_t  lwUSB_hwIsINFlag (  uint8_t lwEPNum  );
 
+/* This Function Tells if the Transaction that was completed was an OUT */
 
-/* This Function returns True if the HW Detected a PID Token with Setup */
+int32_t  lwUSB_hwIsOUTFlag (  uint8_t lwEPNum  );
 
-int32_t  lwUSB_hwIsSetupFlag ( void  );
+/* Clears IN Transmission Complete Flag */
+void  lwUSB_hwClearINFlag(  uint8_t lwEPNum  );
+
+/* Clears OUT Transmission Complete Flag */
+void  lwUSB_hwClearOUTFlag(  uint8_t lwEPNum  );
+
+/* Clears Setup Transmission Complete Flag */
+void  lwUSB_hwClearSetupFlag(  uint8_t lwEPNum  );
 
 /* This Function returns True if a Reset Condition is Detected  */
 
@@ -274,6 +275,17 @@ int32_t  lwUSB_hwIsTransactionComplete ( void  );
 /* This Function Clears Transaction Complete Condition Flags  */
 
 int32_t  lwUSB_hwClearTransactionCompleteFlag ( void  );
+
+
+
+int32_t lwUSB_hwGetNumReceivedBytes ( uint8_t lwEPNum );
+
+int32_t lwUSB_hwWriteNumTransmittedBytes ( uint8_t lwEPNum );
+
+int32_t lwUSB_hwConfigureEndPoint ( uint8_t lwEPNum , uint8_t lwEPAddr , uint8_t lwEPType , uint8_t lwEPDir );
+
+
+
 
 
 

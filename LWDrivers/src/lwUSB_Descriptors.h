@@ -102,7 +102,6 @@ struct lwUSB_string_descriptor_s  lwUSB_manufacturer_string_descriptor = {
 
 	  .bLength =  13u ,
 	  .bDescriptorType = e_lwUSB_bdescriptor_type_string ,
-	  .bString   = "Rumble-Tech"
 
 };
 
@@ -110,7 +109,6 @@ struct lwUSB_string_descriptor_s  lwUSB_product_string_descriptor = {
 
 	  .bLength =  12u ,
 	  .bDescriptorType = e_lwUSB_bdescriptor_type_string ,
-	  .bString   = "Digi Probe"
 
 };
 
@@ -118,7 +116,6 @@ struct lwUSB_string_descriptor_s  lwUSB_serial_string_descriptor = {
 
 	  .bLength =  16u ,
 	  .bDescriptorType = e_lwUSB_bdescriptor_type_string ,
-	  .bString   = "X345IOPQK1239E"
 
 };
 
