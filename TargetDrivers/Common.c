@@ -1,10 +1,11 @@
 
 
-#include "lwCommon.h"
+#include <Common.h>
+#include <src/USART.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include "src/lwUSART.h"
+
 
 
 

@@ -5,10 +5,10 @@
  *      Author: mrashada
  */
 
-#include "lwUSB_Opts.h"
-#include "lwCommon.h"
-#include "lwPbuffi.h"
-
+#include <Common.h>
+#include <src/Pbuffi.h>
+#include "../../lwUSB/lwUSB.h"
+#include "../../lwUSB/lwUSB_Opts.h"
 
 #define LWUSB_USB_TYPEDEF USB
 #define STM32F103_USB_TRANSCEIVER_STARTUP_US 1u
@@ -96,52 +96,33 @@ static inline err_t lwUSB_Clear_NVIC_IRQ( void )
 
 	return ERR_OK ;
 }
-static inline err_t  lwUSB_EnableUSBFunction ( void )
-{
-	USB->DADDR |= (USB_DADDR_EF_Msk) ;
-	return ERR_OK ;
-}
-
-
-static inline err_t lwUSB_DisableUSBFunction ( void )
-{
-    USB->DADDR &= ~(USB_DADDR_EF_Msk);
-    return ERR_OK ;
-}
-
-err_t lwUSB_HardwareReset( void )
-{
-	lwUSB_Disable_NVIC_IRQ();
-	lwUSB_Clear_NVIC_IRQ();
-	lwUSB_Disable();
-	lwUSB_PerphReset();
-	lwUSB_Enable();
-	lwUSB_InitializeTranceivers();
-	lwUSB_Enable_NVIC_IRQ();
-
-	return ERR_OK ;
-}
-
-
-static inline err_t lwUSB_HW_SetAddress ( uint8_t addr )
-{
-	USB->DADDR &= ~ ( USB_DADDR_ADD_Msk );
-	USB->DADDR |= ( addr << USB_DADDR_ADD_Pos );
-	return ERR_OK ;
-}
-
-
 
 
 err_t lwUSB_hwInit( void ){
 
+	/* Disable USB NVIC Line */
 	lwUSB_Disable_NVIC_IRQ();
+	/* Clear Pending */
 	lwUSB_Clear_NVIC_IRQ();
+	/* Disable Perihperal */
 	lwUSB_Disable();
+	/* Reset Peripheral */
 	lwUSB_PerphReset();
+	/* Enable Peripheral */
 	lwUSB_Enable();
+	/* Initialize HW Transceivers */
 	lwUSB_InitializeTranceivers();
+	/* Enable NVIC IRQ */
 	lwUSB_Enable_NVIC_IRQ();
+
+	/* Clear Pending IRQ*/
+	USB->ISTR &= ~( USB_ISTR_WKUP_Msk | USB_ISTR_ERR_Msk | USB_ISTR_ESOF_Msk | USB_ISTR_PMAOVR_Msk | USB_ISTR_RESET_Msk |
+					USB_ISTR_SUSP_Msk | USB_ISTR_SOF_Msk );
+	/* Enable all Interrupts  */
+	USB->CNTR |= ( USB_CNTR_CTRM_Msk | USB_CNTR_ERRM_Msk | USB_CNTR_ESOFM_Msk |
+				 USB_CNTR_PMAOVRM_Msk | USB_CNTR_RESETM_Msk | USB_CNTR_SOFM_Msk |
+				 USB_CNTR_WKUPM_Msk )  ;
+	return ERR_OK ;
 
 }
 
@@ -176,10 +157,7 @@ err_t lwUSB_hwDisable ( void ){
 	return ERR_OK ;
 }
 
-//todo never pass an endpoint struct to these functions only pass endpoint number
-err_t lwUSB_hwInitializeEP( struct lwUSB_ep_s * lwEP ){
-	return ERR_OK ;
-}
+
 
 err_t lwUSB_hwSetAddress( uint8_t Address ){
 
@@ -253,10 +231,37 @@ int32_t lwUSB_hwWriteNumTransmittedBytes ( uint8_t lwEPNum , uint32_t lwLen ){
 
 int32_t lwUSB_hwConfigureEndPoint ( uint8_t lwEPNum , uint8_t lwEPAddr , uint8_t lwEPType , uint8_t lwEPDir ){
 
+	uint8_t EndPoint_Type_Translate[4u];
+
+	EndPoint_Type_Translate[e_lwUSB_EndPoint_Type_Control]     = 1u ;
+	EndPoint_Type_Translate[e_lwUSB_EndPoint_Type_Bulk]        = 0u ;
+	EndPoint_Type_Translate[e_lwUSB_EndPoint_Type_Isochronous] = 2u ;
+	EndPoint_Type_Translate[e_lwUSB_EndPoint_Type_Interrupt]   = 3u ;
+
+
+
+
 	uint32_t * epxr = LWUSB_GET_EPR(lwEPNum);
+
 
 	/* Setup EP */
 	*(epxr) = (~( USB_EP0R_EP_TYPE_Msk | USB_EP0R_EP_KIND_Msk | USB_EP0R_EA_Msk ) )&LWUSB_SAVE_EP_TOGG;
-	*(epxr) = ((lwEPType << USB_EP0R_EP_TYPE_Pos ) | (lwEPAddr << USB_EP0R_EA_Pos   ))&LWUSB_SAVE_EP_TOGG;
+	*(epxr) = ((EndPoint_Type_Translate[lwEPType] << USB_EP0R_EP_TYPE_Pos ) | (lwEPAddr << USB_EP0R_EA_Pos   ))&LWUSB_SAVE_EP_TOGG;
+
+	return ERR_OK ;
 }
 
+void * lwUSB_hwAllocate( uint8_t lwEPNum , size_t lwSize , uint8_t lwEPType , uint8_t lwEPDirection ){
+
+	void* retval =  lwUSB_pmaAllocate(lwEPNum, lwSize);
+
+	if ( retval && lwEPDirection == e_lwUSB_EndPoint_Direction_IN ){
+		lwUSB_pmaWriteTXEntry(lwEPNum, retval ) ;
+	}
+	else if ( retval && lwEPDirection == e_lwUSB_EndPoint_Direction_OUT ){
+		lwUSB_pmaWriteRXEntry(lwEPNum ,retval , lwSize);
+
+	}
+
+	return retval ;
+}

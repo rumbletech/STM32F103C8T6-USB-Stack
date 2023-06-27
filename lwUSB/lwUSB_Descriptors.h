@@ -5,11 +5,11 @@
  *      Author: Garmoosh
  */
 
-#ifndef SRC_LWUSB_DESCRIPTORS_H_
-#define SRC_LWUSB_DESCRIPTORS_H_
+#ifndef LWUSB_DESCRIPTORS_H_
+#define LWUSB_DESCRIPTORS_H_
 
-#include "lwUSB_SPECS.h"
-#include "lwUSB_Opts.h"
+#include "../../lwUSB/lwUSB_Opts.h"
+#include "../../lwUSB/lwUSB_SPECS.h"
 
 //todo try to make static
 
@@ -22,11 +22,7 @@ struct lwUSB_device_descriptor_s lwUSB_Device_Descriptor = {
 	    .bDeviceClass			= e_lwUSB_device_class_interface_defined ,
 		.bDeviceSubClass		= e_lwUSB_device_class_interface_defined ,
 		.bDeviceProtocol        = e_lwUSB_device_class_interface_defined ,
-#if LWUSB_OPTS_CONTROL_EP_TX_B_SIZE > LWUSB_OPTS_CONTROL_EP_RX_B_SIZE
 		.bMaxPacketSize0        = LWUSB_OPTS_CONTROL_EP_RX_B_SIZE ,
-#else
-		.bMaxPacketSize0        = LWUSB_OPTS_CONTROL_EP_TX_B_SIZE ,
-#endif
 		.idVendor               = LWUSB_OPTS_VENDOR_ID ,
 		.idProduct              = LWUSB_OPTS_PRODUCT_ID ,
 		.bcdDevice              = LWUSB_OPTS_BCD_VERSION ,
@@ -45,7 +41,7 @@ struct lwUSB_device_descriptor_s lwUSB_Device_Descriptor = {
 #else
 		.iSerialNumber          = LWUSB_OPTS_SERIAL_NUMBER_STRINGD_EN ,
 #endif
-		.bNumConfigurations     = 0u ,
+		.bNumConfigurations     = 1u ,
 
 };
 
@@ -94,40 +90,16 @@ struct lwUSB_string_descriptor0_s lwUSB_string0_descriptor  = {
 
 	  .bLength = 4u ,
 	  .bDescriptorType = e_lwUSB_bdescriptor_type_string ,
-	  .wLANGID = 0x409 ,
-
-};
-
-struct lwUSB_string_descriptor_s  lwUSB_manufacturer_string_descriptor = {
-
-	  .bLength =  13u ,
-	  .bDescriptorType = e_lwUSB_bdescriptor_type_string ,
-
-};
-
-struct lwUSB_string_descriptor_s  lwUSB_product_string_descriptor = {
-
-	  .bLength =  12u ,
-	  .bDescriptorType = e_lwUSB_bdescriptor_type_string ,
-
-};
-
-struct lwUSB_string_descriptor_s  lwUSB_serial_string_descriptor = {
-
-	  .bLength =  16u ,
-	  .bDescriptorType = e_lwUSB_bdescriptor_type_string ,
-
-};
-
-struct lwUSB_microsoft_os_string_descriptor_s lwUSB_microsoft_os_string_descriptor  = {
-	  .bLength = 18u ,
-	  .bDescriptorType = e_lwUSB_bdescriptor_type_string ,
-	  .bString = "MSFT100" ,
-	  .VendorCode = 0X32 ,
-	  .reserved   = 0X00 ,
 
 };
 
 
 
-#endif /* SRC_LWUSB_DESCRIPTORS_H_ */
+
+
+
+
+
+
+
+#endif /* LWUSB_DESCRIPTORS_H_ */

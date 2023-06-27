@@ -8,7 +8,7 @@
  *      */
 
 
-#include "lwCommon.h"
+#include <Common.h>
 
 #define STARTUP_INST_TICKS 100
 

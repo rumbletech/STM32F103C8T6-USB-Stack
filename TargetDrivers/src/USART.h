@@ -5,10 +5,10 @@
  *      Author: Garmoosh
  */
 
-#ifndef SRC_LWUSART_H_
-#define SRC_LWUSART_H_
+#ifndef SRC_USART_H_
+#define SRC_USART_H_
 
-#include "lwCommon.h"
+#include <Common.h>
 
 
 
@@ -94,4 +94,4 @@ err_t lwUSART_AS_Receieve( USART_TypeDef* lwusart , uint8_t* dptr , int16_t len 
 
 
 
-#endif /* SRC_LWUSART_H_ */
+#endif /* SRC_USART_H_ */

@@ -5,11 +5,12 @@
  *      Author: Garmoosh
  */
 
-#ifndef SRC_LWUSB_H_
-#define SRC_LWUSB_H_
+#ifndef LWUSB_H_
+#define LWUSB_H_
 
-#include "lwCommon.h"
-#include "lwUSB_SPECS.h"
+#include <Common.h>
+
+#include "../../lwUSB/lwUSB_SPECS.h"
 
 
 
@@ -35,7 +36,8 @@
 #define LWUSB_EP_TYPE_MAX 3u
 #define LWUSB_EP_DIRECTION_MAX 1u
 #define LWUSB_ENDPOINT_MAX_NUMBER 8u
-
+#define LWUSB_STRINGD_ENCODE_RAW   0u
+#define LWUSB_STRINGD_ENCODE_UTF16 1u
 
 /* Macros*/
 
@@ -145,7 +147,6 @@ struct lwUSB_ep_ch_s {
 	e_lwUSB_EndPoint_State 	    EP_State ;							/* Current State */
 	uint16_t         			EP_Size ;							/* Endpoint Buffer Size */
 	uint8_t *       			EP_BufferHandle ;					/* Pointer to the Endpoint's Allocated buffer */
-	struct lwUSB_transaction_s* EP_Transaction ;					/* Pointer to the Current Running Transaction on the Endpoint */
 };
 
 struct lwUSB_ep_s {
@@ -156,8 +157,11 @@ struct lwUSB_ep_s {
 	uint8_t         			EP_Number ;							/* Number of this Endpoint , this Refers to Endpoint Index in reference to the actual Number of EPS in the HW */
 	uint8_t                     EP_Address ;						/* Address of the Endpoint , this Refers to the Actual Address the Endpoint is Addressed By the Host */
 	/* Only one Channel is allowed for an Endpoint Except for BiDirectional Control Endpoints */
-	struct lwUSB_ep_ch_s * 		EP_TxChannel ;						/* Transmission Channel Defined Only for IN EndPoints and Control */
-	struct lwUSB_ep_ch_s *      EP_RxChannel ;						/* Reception Channel Defined Only for OUT EndPoints and Control   */
+	struct lwUSB_ep_ch_s  		EP_TxChannel ;						/* Transmission Channel Defined Only for IN EndPoints and Control */
+	struct lwUSB_ep_ch_s        EP_RxChannel ;						/* Reception Channel Defined Only for OUT EndPoints and Control   */
+
+	struct lwUSB_transaction_s *EP_Transaction ;					    /*  the Current Running Transaction on the Endpoint */
+
 
 };
 
@@ -276,18 +280,21 @@ int32_t  lwUSB_hwIsTransactionComplete ( void  );
 
 int32_t  lwUSB_hwClearTransactionCompleteFlag ( void  );
 
-
-
+/* Gets Number of Received Bytes from the Hardware */
 int32_t lwUSB_hwGetNumReceivedBytes ( uint8_t lwEPNum );
 
-int32_t lwUSB_hwWriteNumTransmittedBytes ( uint8_t lwEPNum );
+/* Writes Number of to be Transmitted Bytes to the Hardware */
+int32_t lwUSB_hwWriteNumTransmittedBytes ( uint8_t lwEPNum , uint32_t lwLen );
 
+/* Configures EndPoint Properties */
 int32_t lwUSB_hwConfigureEndPoint ( uint8_t lwEPNum , uint8_t lwEPAddr , uint8_t lwEPType , uint8_t lwEPDir );
 
+/* Allocates Space for the EndPoint */
+
+void * lwUSB_hwAllocate( uint8_t lwEPNum , size_t lwSize , uint8_t lwEPType , uint8_t lwEPDirection );
 
 
 
 
 
-
-#endif /* SRC_LWUSB_H_ */
+#endif /* LWUSB_H_ */

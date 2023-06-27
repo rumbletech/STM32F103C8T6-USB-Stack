@@ -5,11 +5,11 @@
  *      Author: Garmoosh
  */
 
-#ifndef SRC_LWGPIO_H_
-#define SRC_LWGPIO_H_
+#ifndef SRC_GPIO_H_
+#define SRC_GPIO_H_
 
 
-#include "lwCommon.h"
+#include <Common.h>
 
 
 #define E_LWGPIO_CONF_RNG 3U
@@ -57,4 +57,4 @@ LW_INLINE err_t lwGPIO_ResetPin( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_
 LW_INLINE int8_t  lwGPIO_ReadPin( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_cs );
 err_t lwGPIO_Config( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_cs );
 err_t lwGPIO_Lock(  GPIO_TypeDef* lwgpio  );
-#endif /* SRC_LWGPIO_H_ */
+#endif /* SRC_GPIO_H_ */

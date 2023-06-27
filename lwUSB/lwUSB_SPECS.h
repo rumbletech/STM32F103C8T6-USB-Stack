@@ -5,8 +5,8 @@
  *      Author: Garmoosh
  */
 
-#ifndef SRC_LWUSB_SPECS_H_
-#define SRC_LWUSB_SPECS_H_
+#ifndef LWUSB_SPECS_H_
+#define LWUSB_SPECS_H_
 
 #define BMREQUEST_DIRECTION_HOST_TO_DEVICE 0u
 #define BMREQUEST_DIRECTION_DEVICE_TO_HOST 1u
@@ -18,6 +18,10 @@
 #define BMREQUEST_RECIPIENT_ENDPOINT 2u
 #define BMREQUEST_RECIPIENT_OTHERS 3u
 
+
+#include "stdint.h"
+
+#define LANGID_ENGLISH  0x0409
 
 
 
@@ -283,4 +287,4 @@ struct lwUSB_microsoft_os_string_descriptor_s {
 
 
 
-#endif /* SRC_LWUSB_SPECS_H_ */
+#endif /* LWUSB_SPECS_H_ */

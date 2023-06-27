@@ -8,7 +8,7 @@
 #ifndef LWUSB_OPTS_H_
 #define LWUSB_OPTS_H_
 
-
+#include "../../lwUSB/lwUSB_SPECS.h"
 /******************************************************* HW Specific Defines *************************************************************/
 /*****************************************************************************************************************************************/
 
@@ -18,7 +18,7 @@
 /*****************************************************************************************************************************************/
 
 #define LWUSB_OPTS_CONTROL_EP_TX_B_SIZE 64u				/* Control EP Transfer Buffer Size */
-#define LWUSB_OPTS_CONTROL_EP_RX_B_SIZE 64u				/* Control EP Receive  Buffer Size */
+#define LWUSB_OPTS_CONTROL_EP_RX_B_SIZE 32u				/* Control EP Receive  Buffer Size */
 
 /****************************************************** Stack Speicifc Defines ***********************************************************/
 /*****************************************************************************************************************************************/
@@ -32,7 +32,10 @@
 
 #define LWUSB_OPTS_VENDOR_ID 			0x1672		    /* Vendor ID */
 #define LWUSB_OPTS_PRODUCT_ID			0x0407			/* Product ID */
-#define LWUSB_OPTS_BCD_VERSION          0X4003          /* Version of the Device , in binary coded decimal */
+#define LWUSB_OPTS_BCD_VERSION          0x4003          /* Version of the Device , in binary coded decimal */
+#define LWUSB_OPTS_VENDOR_CODE          0x32			/* Vendor Code in Microsoft Windows Registry */
+
+#define LWUSB_OPTS_LANGID               LANGID_ENGLISH,LANGID_ENGLISH 	/* Array of Supported LANGID */
 
 
 #define LWUSB_OPTS_SERIAL_NUMBER_STRINGD_EN 0x1
@@ -61,6 +64,8 @@
 
 /*****************************************************************************************************************************************/
 /*****************************************************************************************************************************************/
+
+
 
 
 

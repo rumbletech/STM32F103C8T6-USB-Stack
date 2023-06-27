@@ -5,8 +5,8 @@
  *      Author: Garmoosh
  */
 
-#ifndef LWCOMMON_H_
-#define LWCOMMON_H_
+#ifndef COMMON_H_
+#define COMMON_H_
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -185,4 +185,4 @@ int32_t heap_dump ( struct heap_s * mem_heap  ) ;
 
 
 
-#endif /* LWCOMMON_H_ */
+#endif /* COMMON_H_ */
