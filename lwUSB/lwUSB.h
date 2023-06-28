@@ -8,11 +8,8 @@
 #ifndef LWUSB_H_
 #define LWUSB_H_
 
-#include <Common.h>
-
-#include "../../lwUSB/lwUSB_SPECS.h"
-
-
+#include "lwUSB_SPECS.h"
+#include "lwUSB_Common.h"
 
 //todo remove
 #define USB_STATE_IDLE 0u

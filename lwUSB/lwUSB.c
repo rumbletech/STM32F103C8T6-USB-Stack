@@ -3,10 +3,10 @@
 
 
 #include "../../lwUSB/lwUSB.h"
-
 #include "../../lwUSB/lwUSB_Descriptors.h"
 #include "../../lwUSB/lwUSB_Opts.h"
-
+// todo remove dependency here
+#include "Common.h"
 
 #define LWUSB_GET_CONFIG_V_NUM(VALUE) (VALUE-LWUSB_OPTS_CONFIG_VALUE_START)
 #define LWUSB_STRLEN(STR) (strlen((char*)STR))
@@ -193,9 +193,9 @@ struct lwUSB_string_s *  lwUSB_RegisterString( uint8_t stringID , uint8_t * IStr
 	return s ;
 }
 
-err_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * EndPoint );
+uint32_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * EndPoint );
 
-err_t lwUSB_Reset( void )
+uint32_t lwUSB_Reset( void )
 {
 
 	/* Reset Hardware EndPoint Registers */
@@ -211,7 +211,7 @@ err_t lwUSB_Reset( void )
 
 	lwUSB_hwSetAddress(0u);
 
-	err_t status = lwUSB_Initialize_Endpoint( lwUSB_controller.lwUSB_eps[0u] ) ;
+	uint32_t status = lwUSB_Initialize_Endpoint( lwUSB_controller.lwUSB_eps[0u] ) ;
 
 	lwUSB_hwEnable();
 
@@ -219,7 +219,7 @@ err_t lwUSB_Reset( void )
 
 }
 
-err_t lwUSB_Init( void ){
+uint32_t lwUSB_Init( void ){
 
 	/* Call Low Level Initialization Routine */
 	lwUSB_hwInit();
@@ -254,7 +254,7 @@ err_t lwUSB_Init( void ){
 }
 
 //todo make err Generic to the stack
-err_t lwUSB_LoadPacket( struct lwUSB_ep_s * EndPoint  , uint8_t * DataPtr , uint32_t Length  )
+uint32_t lwUSB_LoadPacket( struct lwUSB_ep_s * EndPoint  , uint8_t * DataPtr , uint32_t Length  )
 {
 
 	if ( !EndPoint || !EndPoint->EP_isInitialized ){
@@ -272,14 +272,14 @@ err_t lwUSB_LoadPacket( struct lwUSB_ep_s * EndPoint  , uint8_t * DataPtr , uint
 }
 
 
-static inline err_t lwUSB_SetAddress ( uint8_t  addr )
+static inline uint32_t lwUSB_SetAddress ( uint8_t  addr )
 {
 	lwUSB_controller.device_addr = addr ;
 	lwUSB_controller.lwUSB_device_state = e_lwUSB_controller_state_address ;
 	lwUSB_hwSetAddress(addr);
 	return ERR_OK ;
 }
-static  err_t lwUSB_Protocol_Stall ( struct lwUSB_ep_s * EndPoint )
+static  uint32_t lwUSB_Protocol_Stall ( struct lwUSB_ep_s * EndPoint )
 {
 	if ( EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_IN ){
 		lwUSB_hwSetTXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
@@ -295,7 +295,7 @@ static  err_t lwUSB_Protocol_Stall ( struct lwUSB_ep_s * EndPoint )
 }
 
 
-static  err_t lwUSB_DisableChannels ( struct lwUSB_ep_s * EndPoint )
+static  uint32_t lwUSB_DisableChannels ( struct lwUSB_ep_s * EndPoint )
 {
 
 	lwUSB_hwSetTXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Disabled);
@@ -310,14 +310,14 @@ static uint32_t zlp = 0xa5a5a5a5;
 
 
 
-err_t lwUSB_Set_Transaction_State ( struct lwUSB_ep_s * EndPoint , e_lwUSB_transaction_state State  )
+uint32_t lwUSB_Set_Transaction_State ( struct lwUSB_ep_s * EndPoint , e_lwUSB_transaction_state State  )
 {
 	EndPoint->EP_Transaction->current_state = State ;
 	return ERR_OK ;
 }
 
 /* This Function Registers an IN Transaction on the EP */
-err_t lwUSB_Transfer_IN(struct lwUSB_ep_s * EndPoint ,  uint8_t * DataPtr , uint32_t Length  )
+uint32_t lwUSB_Transfer_IN(struct lwUSB_ep_s * EndPoint ,  uint8_t * DataPtr , uint32_t Length  )
 {
 	if ( !EndPoint || !DataPtr || !EndPoint->EP_isInitialized ){
 		return ERR_NULL ;
@@ -385,7 +385,7 @@ int32_t lwUSB_Transfer_OUT(struct lwUSB_ep_s * EndPoint ,  uint8_t * DataPtr  )
 
 
 
-static err_t lwUSB_Copy_Configuration ( uint8_t * dest , struct lwUSB_configuration_s * config )
+static uint32_t lwUSB_Copy_Configuration ( uint8_t * dest , struct lwUSB_configuration_s * config )
 {
 
 	struct lwUSB_interface_s * intf  ;
@@ -417,7 +417,7 @@ static err_t lwUSB_Copy_Configuration ( uint8_t * dest , struct lwUSB_configurat
 
 }
 
-static err_t lwUSB_GetEndPointByAddress( uint8_t EPn ){
+static uint32_t lwUSB_GetEndPointByAddress( uint8_t EPn ){
 
 	for ( int32_t i = 0 ; i < LWUSB_OPTS_NUM_HW_EPS ; i++ ){
 		if ( lwUSB_controller.lwUSB_eps[i] && lwUSB_controller.lwUSB_eps[i]->EP_isInitialized ){
@@ -429,7 +429,7 @@ static err_t lwUSB_GetEndPointByAddress( uint8_t EPn ){
 
 	return ERR_FAULT ;
 }
-static err_t lwUSB_Handle_CTR ( uint8_t EPn ){
+static uint32_t lwUSB_Handle_CTR ( uint8_t EPn ){
 
 	int32_t state = lwUSB_GetEndPointByAddress( EPn );
 	/* Doesn't Exist or Invalid EP Num */
@@ -704,7 +704,7 @@ static err_t lwUSB_Handle_CTR ( uint8_t EPn ){
 
 //todo moved to hw interface only 2 byte sized blocks are used make it work with both 32 and 2
 //todo this function needs a visist with regards to where it fits in the stack
-err_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * EndPoint ){
+uint32_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * EndPoint ){
 	LW_ASSERT( EndPoint != NULL ) ;
 	LW_ASSERT( EndPoint->EP_Number <= LWUSB_OPTS_NUM_HW_EPS-1 );
 	LW_ASSERT( EndPoint->EP_Type <= LWUSB_EP_TYPE_MAX );
@@ -864,7 +864,7 @@ struct lwUSB_configuration_s *  lwUSB_CreateConfiguration ( uint8_t * IString ){
 
 
 
-err_t lwUSB_RegisterEndpoint ( struct lwUSB_endpoint_s * endpoint , struct lwUSB_interface_s * interface ){
+uint32_t lwUSB_RegisterEndpoint ( struct lwUSB_endpoint_s * endpoint , struct lwUSB_interface_s * interface ){
 	/* Null Check */
 	if ( !endpoint || !interface ){
 		return ERR_NULL ;
@@ -895,7 +895,7 @@ err_t lwUSB_RegisterEndpoint ( struct lwUSB_endpoint_s * endpoint , struct lwUSB
 
 }
 
-err_t lwUSB_RegisterInterface ( struct lwUSB_interface_s * interface , struct lwUSB_configuration_s * config ){
+uint32_t lwUSB_RegisterInterface ( struct lwUSB_interface_s * interface , struct lwUSB_configuration_s * config ){
 	/* Null Check */
 	if ( !interface || !config ){
 		return ERR_NULL ;
@@ -916,7 +916,7 @@ err_t lwUSB_RegisterInterface ( struct lwUSB_interface_s * interface , struct lw
 
 }
 
-err_t lwUSB_RegisterConfiguration ( struct lwUSB_configuration_s * config ){
+uint32_t lwUSB_RegisterConfiguration ( struct lwUSB_configuration_s * config ){
 	/* Null Check */
 	if ( !config || !config->interface || !config->d_configuration ){
 		return ERR_NULL ;
