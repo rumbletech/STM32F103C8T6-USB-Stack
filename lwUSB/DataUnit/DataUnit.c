@@ -30,7 +30,7 @@ struct DataUnit_s makeDataUnit ( uint8_t * dataPtr ,
 
 /******************************  PUSH/GET/COPY  *************************/
 
-void pushDataUnitToMemory( struct DataUnit_s du , uint8_t * mptr ){
+void pushDU( struct DataUnit_s du , uint8_t * mptr ){
 
 	uint8_t * src = du.data ;
 	uint8_t * dst = mptr ;
@@ -44,7 +44,7 @@ void pushDataUnitToMemory( struct DataUnit_s du , uint8_t * mptr ){
 	return;
 }
 
-struct DataUnit_s getDataUnitFromMemory( uint8_t * dup , uint8_t * mptr ){
+struct DataUnit_s getDU( uint8_t * dup , uint8_t * mptr ){
 
 	uint8_t * src = mptr ;
 	uint8_t * dst = dup ;
