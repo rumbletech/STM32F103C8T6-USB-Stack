@@ -12,7 +12,8 @@
  */
 #include <stddef.h>
 #include "DataPool.h"
-#include "../lwDebug.h"
+
+#include "../Include/lwUSB_Debug.h"
 
 
 #if defined(DP_DEBUG_EN) && DP_DEBUG_EN != 0u

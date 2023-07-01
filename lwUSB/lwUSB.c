@@ -1,13 +1,9 @@
-
-
-
-
 #include "lwUSB.h"
 #include "Include/lwUSB_Descriptors.h"
 #include "Include/lwUSB_Opts.h"
-// todo remove dependency here
 #include "Common.h"
-#include "lwDebug.h"
+
+#include "Include/lwUSB_Debug.h"
 
 #define LWUSB_GET_CONFIG_V_NUM(VALUE) (VALUE-LWUSB_OPTS_CONFIG_VALUE_START)
 #define LWUSB_STRLEN(STR) (strlen((char*)STR))
@@ -22,9 +18,6 @@ static uint32_t  sofc = 0  ;
 static uint32_t string_indexing  = 0 ;
 static uint32_t get               = 0 ;
 
-
-
-
 typedef enum  {
 
 	e_lwUSB_ep_type_bulk      = 0b00 ,
@@ -32,9 +25,6 @@ typedef enum  {
 	e_lwUSB_ep_type_iso       = 0b10 ,
 	e_lwUSB_ep_type_interrupt = 0b11
 } e_lWUSB_ep_type ;
-
-
-
 
 typedef enum {
 
@@ -55,12 +45,6 @@ typedef enum {
 
 
 } e_lwUSB_controller_state ;
-
-
-
-
-
-
 
 struct lwUSB_controller_s {
 

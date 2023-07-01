@@ -12,7 +12,4 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-
-
-
 #endif /* LWUSB_STD_H_ */
