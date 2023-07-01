@@ -11,23 +11,7 @@
 #include "Include/lwUSB_SPECS.h"
 #include <stddef.h>
 
-//todo remove
-#define USB_STATE_IDLE 0u
-#define USB_STATE_RESET 1u
-#define USB_STATE_SUSP 2u
-#define USB_STATE_SOF 3u
-#define USB_STATE_ESOF 4u
-#define USB_STATE_ERR 5u
-#define USB_STATE_WKUP 6u
-#define USB_STATE_CTR 7u
-
-
-
 /* Constants */
-
-
-
-
 #define LWUSB_ISOCHRONOUS_MAX_PERIOD_MS 32768u
 #define LWUSB_ENDPOINT_MAX_PERIOD_MS 255u
 #define LWUSB_EP_TYPE_MAX 3u
@@ -37,11 +21,6 @@
 #define LWUSB_STRINGD_ENCODE_UTF16 1u
 
 /* Macros*/
-
-
-
-
-
 /* This Implementation Supports only :
  * Configurations with no class or vendor specific descriptors
  * it only implements configurations with defined interfaces .

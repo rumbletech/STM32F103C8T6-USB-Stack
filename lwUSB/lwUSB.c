@@ -14,7 +14,6 @@
 
 //todo remove
 extern volatile int32_t usb_state ;
-static uint32_t  sofc = 0  ;
 static uint32_t string_indexing  = 0 ;
 static uint32_t get               = 0 ;
 
@@ -60,9 +59,6 @@ struct lwUSB_controller_s {
 	uint8_t nextConfigIndex    ;
 	uint8_t nextInterfaceIndex ;
 	uint8_t nextStringIndex    ;
-
-
-
 
 };
 
@@ -414,7 +410,7 @@ static uint32_t lwUSB_GetEndPointByAddress( uint8_t EPn ){
 
 	return ERR_FAULT ;
 }
-static uint32_t lwUSB_Handle_CTR ( uint8_t EPn ){
+uint32_t lwUSB_Handle_CTR ( uint8_t EPn ){
 
 	int32_t state = lwUSB_GetEndPointByAddress( EPn );
 	/* Doesn't Exist or Invalid EP Num */
@@ -455,6 +451,7 @@ static uint32_t lwUSB_Handle_CTR ( uint8_t EPn ){
 		}
 		uint16_t request_length = lwUSB_hwReadData( EndPoint->EP_Number , (uint8_t*)&lwUSB_controller.request  );
 		LW_ASSERT( request_length == sizeof(struct lwUSB_setup_data));
+
 		struct lwUSB_setup_data * request = &lwUSB_controller.request ;
 
 		switch( request->bRequest )
@@ -932,115 +929,3 @@ uint32_t lwUSB_RegisterConfiguration ( struct lwUSB_configuration_s * config ){
 	return ERR_OK ;
 
 }
-
-
-
-/* Triggered only by a correct transfer event for isochronous and double-buffer bulk transfer
- * to reach the highest possible transfer rate.
- */
-void USB_HP_CAN_TX_IRQHandler ( void )
-{
-
-	while(1);
-
-}
-
-
-/* Triggered by all USB events  (Correct transfer, USB reset, etc.).
- * The firmware has to check the interrupt source before serving the interrupt.
- */
-void USB_LP_CAN_RX0_IRQHandler ( void )
-{
-
-	static int  reset_count = 0 ;
-
-	if ( USB->ISTR & USB_ISTR_RESET_Msk ){
-		reset_count++;
-		if ( reset_count == 2 ){
-			debug++;
-		}
-		//Clear Flag
-		USB->ISTR &= ~USB_ISTR_RESET_Msk ;
-		//Reset Handler
-		lwUSB_Reset();
-		// register ep1
-//		if ( !(debug++) ){
-//		struct lwUSB_configuration_s * config_1 = lwUSB_CreateConfiguration( "1stConfig" );
-//		struct lwUSB_interface_s     * intf_1   = lwUSB_CreateInterface("1stIntf");
-//		struct lwUSB_endpoint_s      * ep_1     = lwUSB_CreateEndpoint(32u , e_lwUSB_EndPoint_Type_Bulk, e_lwUSB_EndPoint_Direction_IN , 10 );
-//		lwUSB_RegisterEndpoint(ep_1, intf_1);
-//		lwUSB_RegisterInterface(intf_1, config_1);
-//		lwUSB_RegisterConfiguration(config_1);
-//		}
-		//Flag
-		usb_state = USB_STATE_RESET;
-	}
-	else if ( USB->ISTR & USB_ISTR_CTR_Msk ){
-
-		/* Handle Transfer*/
-		lwUSB_Handle_CTR( USB->ISTR & USB_ISTR_EP_ID_Msk );
-		usb_state = USB_STATE_CTR ;
-	}
-//	if ( USB->ISTR & USB_ISTR_SUSP_Msk )
-//	{
-//		USB->ISTR &= ~USB_ISTR_SUSP_Msk ;
-//
-//
-//		USB->CNTR &= ~USB_CNTR_SUSPM_Msk ;
-//		/* Go into low power mode */
-//	//	USB->CNTR |= USB_CNTR_LP_MODE_Msk ;
-//		/* This bit is clear on a wakeup event */
-//		usb_state = USB_STATE_SUSP;
-//
-//	}
-	else if ( USB->ISTR & USB_ISTR_SOF_Msk )
-	{
-		USB->ISTR &= ~USB_ISTR_SOF_Msk ;
-		usb_state = USB_STATE_SOF;
-
-	}
-	else if ( USB->ISTR & USB_ISTR_ESOF_Msk )
-	{
-		/* Each sofc is 1ms passing*/
-		sofc++;
-		/* Ignore */
-		USB->ISTR &= ~ USB_ISTR_ESOF_Msk ;
-		usb_state = USB_STATE_ESOF;
-
-	}
-	else if ( USB->ISTR & USB_ISTR_ERR_Msk )
-	{
-		/*Ignore Errors*/
-		/* NANS ERROR , NO Answer from Host */
-
-		USB->ISTR &= ~ USB_ISTR_ERR_Msk ;
-		usb_state = USB_STATE_ERR;
-
-	}
-	else if ( USB->ISTR & USB_ISTR_WKUP_Msk )
-	{
-		/* RE-Enable SUSPEND INTERRUPTS */
-		USB->CNTR |= USB_CNTR_SUSPM_Msk ;
-		USB->ISTR &= ~USB_ISTR_WKUP_Msk ;
-		usb_state = USB_STATE_WKUP;
-
-	}
-
-
-
-
-
-}
-
-/* Triggered by wakeup events */
-
-void USBWakeUp_IRQHandler( void )
-{
-
-	while(1);
-
-}
-
-
-
-
