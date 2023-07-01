@@ -1,5 +1,5 @@
 /*
- * lwPbuffi.h
+ * Pbuffi.h
  *
  *  Created on: Jan 14, 2023
  *      Author: mrashada
@@ -10,10 +10,7 @@
 
 #include <Common.h>
 
-#include "../../lwUSB/lwUSB_Opts.h"
-
-//todo this is PMA specific we may allow buffer allocation into the btable region
-
+#include "../../lwUSB/Include/lwUSB_Opts.h"
 
 /* Configuration Parameters for Microcontroller Specific PMA Buffer */
 
@@ -31,16 +28,13 @@
 #define LWUSB_PMA_GET_SYS_ADDR(X) ((uint32_t*)((uint32_t)LWUSB_PMA_START_ADDR + X*LWUSB_PMA_BUFF_ALIGNMENT))				  //Convert from PMA Addr to SYS
 
 
-
-
-
-err_t lwUSB_pmaInit( void );
-void* lwUSB_pmaAllocate( uint32_t ep_num , size_t size  );
-err_t lwUSB_pmaRead( uint8_t EPNum , uint8_t * DataPtr , uint32_t len  );
-err_t lwUSB_pmaWrite( uint8_t EPNum , uint8_t * DataPtr  , uint32_t len   );
-err_t lwUSB_pmaWriteTXEntry( uint32_t ep_num , void *addr );
-err_t lwUSB_pmaWriteRXEntry( uint32_t ep_num , void *addr , size_t size  );
-int32_t lwUSB_pmaWriteNumBytes( uint8_t EPNum , uint32_t Length );
-int32_t lwUSB_pmaGetNumBytes( uint8_t EPNum  );
+err_t USB_pmaInit( void );
+void* USB_pmaAllocate( uint32_t ep_num , size_t size  );
+err_t USB_pmaRead( uint8_t EPNum , uint8_t * DataPtr , uint32_t len  );
+err_t USB_pmaWrite( uint8_t EPNum , uint8_t * DataPtr  , uint32_t len   );
+err_t USB_pmaWriteTXEntry( uint32_t ep_num , void *addr );
+err_t USB_pmaWriteRXEntry( uint32_t ep_num , void *addr , size_t size  );
+int32_t USB_pmaWriteNumBytes( uint8_t EPNum , uint32_t Length );
+int32_t USB_pmaGetNumBytes( uint8_t EPNum  );
 
 #endif /* LWPBUFFI_H_ */

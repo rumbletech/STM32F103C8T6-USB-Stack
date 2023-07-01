@@ -2,27 +2,15 @@
 
 #include <src/GPIO.h>
 
-
-
-
 #define  UINT32_CAST_GPIOA  UINT32T_CAST(GPIOA)
 #define	 UINT32_CAST_GPIOB  UINT32T_CAST(GPIOB)
 #define	 UINT32_CAST_GPIOC  UINT32T_CAST(GPIOC)
 #define	 UINT32_CAST_GPIOD  UINT32T_CAST(GPIOD)
 #define	 UINT32_CAST_GPIOE  UINT32T_CAST(GPIOE)
 
-#define ASSERT_GPIO_TYPDEF(GPIO_IN) LW_ASSERT( ( (UINT32T_CAST(GPIO_IN) == UINT32_CAST_GPIOA) || \
-									  (UINT32T_CAST(GPIO_IN) == UINT32_CAST_GPIOB) || \
-									  (UINT32T_CAST(GPIO_IN) == UINT32_CAST_GPIOC) || \
-									  (UINT32T_CAST(GPIO_IN) == UINT32_CAST_GPIOD) || \
-									  (UINT32T_CAST(GPIO_IN) == UINT32_CAST_GPIOE)  \
-									  ) ) \
+err_t GPIO_EnableGPIO ( GPIO_TypeDef* gpio  ){
 
-LW_INLINE err_t lwGPIO_EnableGPIO ( GPIO_TypeDef* lwgpio  ){
-#if ( LW_ASSERT_ENABLE == 1U )
-	ASSERT_GPIO_TYPDEF(lwgpio);
-#endif
-	uint32_t cast_gpio = (uint32_t)lwgpio ;
+	uint32_t cast_gpio = (uint32_t)gpio ;
 	switch (cast_gpio)
 	{
 	case UINT32_CAST_GPIOA :
@@ -41,105 +29,80 @@ LW_INLINE err_t lwGPIO_EnableGPIO ( GPIO_TypeDef* lwgpio  ){
 		RCC->APB2ENR |= RCC_APB2ENR_IOPEEN_Msk ;
 		break;
 	default :
-		LW_DEBUG( "LW_DEBUG: Invalid_Param" ) ;
+		targetPrintf( "LW_DEBUG: Invalid_Param" ) ;
 		return ERR_PARAM ;
 	}
 	return ERR_OK ;
 }
 
 
-LW_INLINE err_t lwGPIO_WritePort( GPIO_TypeDef* lwgpio , uint16_t portv  ){
-#if ( LW_ASSERT_ENABLE == 1U )
-	LW_ASSERT( (portv&0xFFFF) == 0 );
-	ASSERT_GPIO_TYPDEF(lwgpio);
-#endif
-	lwgpio->ODR = portv ;
+err_t GPIO_WritePort( GPIO_TypeDef* gpio , uint16_t portv  ){
+
+	gpio->ODR = portv ;
 	return ERR_OK ;
 }
 
-LW_INLINE int32_t lwGPIO_ReadPort( GPIO_TypeDef* lwgpio  ){
-#if ( LW_ASSERT_ENABLE == 1U )
-	ASSERT_GPIO_TYPDEF(lwgpio);
-#endif
-	return lwgpio->IDR&0xFFFF ;
+int32_t GPIO_ReadPort( GPIO_TypeDef* gpio  ){
+
+	return gpio->IDR&0xFFFF ;
 }
 
 
 
-LW_INLINE err_t lwGPIO_SetPin( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_cs  ){
-#if ( LW_ASSERT_ENABLE == 1U )
-	LW_ASSERT( lwgpio_cs->pin_i <= 15u );
-	ASSERT_GPIO_TYPDEF(lwgpio);
-#endif
-	lwgpio->BSRR |= ( 1u << lwgpio_cs->pin_i )  ;
+err_t GPIO_SetPin( GPIO_TypeDef* gpio , s_GPIO_Config* gpio_cs  ){
+
+	gpio->BSRR |= ( 1u << gpio_cs->pin_i )  ;
 	return ERR_OK ;
 }
 
-LW_INLINE err_t lwGPIO_ResetPin( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_cs ){
-#if ( LW_ASSERT_ENABLE == 1U )
-	LW_ASSERT( lwgpio_cs->pin_i <= 15u );
-	ASSERT_GPIO_TYPDEF(lwgpio);
-#endif
-	lwgpio->BRR |= ( 1u << lwgpio_cs->pin_i )  ;
+err_t GPIO_ResetPin( GPIO_TypeDef* gpio , s_GPIO_Config* gpio_cs ){
+
+	gpio->BRR |= ( 1u << gpio_cs->pin_i )  ;
 	return ERR_OK ;
 }
 
-LW_INLINE int8_t lwGPIO_ReadPin( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_cs  ){
-#if ( LW_ASSERT_ENABLE == 1U )
-	LW_ASSERT( lwgpio_cs->pin_i <= 15u );
-	ASSERT_GPIO_TYPDEF(lwgpio);
-#endif
-	if( lwgpio->IDR & (1u << lwgpio_cs->pin_i )){
+int8_t GPIO_ReadPin( GPIO_TypeDef* gpio , s_GPIO_Config* gpio_cs  ){
+
+	if( gpio->IDR & (1u << gpio_cs->pin_i )){
 		return 1u ;
 	}
 	return 0u ;
 }
 
 
-err_t lwGPIO_Config( GPIO_TypeDef* lwgpio , s_lwGPIO_Config* lwgpio_cs ){
-#if ( LW_ASSERT_ENABLE == 1U )
-	LW_ASSERT( lwgpio_cs );
-	LW_ASSERT( lwgpio_cs->mode <= E_LWGPIO_MODE_RNG);
-	LW_ASSERT( lwgpio_cs->conf <= E_LWGPIO_CONF_RNG);
-	LW_ASSERT( lwgpio_cs->pin_i <= 15u );
-	LW_ASSERT( lwgpio_cs->lock <= 1u );
-	ASSERT_GPIO_TYPDEF(lwgpio);
-#endif
+err_t GPIO_Config( GPIO_TypeDef* gpio , s_GPIO_Config* gpio_cs ){
 
-	uint8_t config_v = ((lwgpio_cs->mode) | (lwgpio_cs->conf << 2u));
-	uint8_t shift_v = (lwgpio_cs->pin_i%8)*4u ;
+	uint8_t config_v = ((gpio_cs->mode) | (gpio_cs->conf << 2u));
+	uint8_t shift_v = (gpio_cs->pin_i%8)*4u ;
 
-	if ( lwgpio_cs->pin_i <= 7u ){
-		lwgpio->CRL &= ~( 0xF <<  shift_v );
-		lwgpio->CRL |= ( config_v << shift_v);
+	if ( gpio_cs->pin_i <= 7u ){
+		gpio->CRL &= ~( 0xF <<  shift_v );
+		gpio->CRL |= ( config_v << shift_v);
 	}
 	else{
-		lwgpio->CRH &= ~( 0xF <<  shift_v );
-		lwgpio->CRH |= ( config_v << shift_v );
+		gpio->CRH &= ~( 0xF <<  shift_v );
+		gpio->CRH |= ( config_v << shift_v );
 	}
 
-	lwgpio->LCKR |= (  lwgpio_cs->lock << lwgpio_cs->pin_i );
+	gpio->LCKR |= (  gpio_cs->lock << gpio_cs->pin_i );
 	return ERR_OK ;
 }
 
-err_t lwGPIO_Lock(  GPIO_TypeDef* lwgpio  ){
+err_t GPIO_Lock(  GPIO_TypeDef* gpio  ){
 
-#if ( LW_ASSERT_ENABLE == 1U )
-	ASSERT_GPIO_TYPDEF(lwgpio);
-#endif
-	if ( lwgpio->LCKR & GPIO_LCKR_LCKK_Msk ){
+	if ( gpio->LCKR & GPIO_LCKR_LCKK_Msk ){
 		return ERR_FAULT ;
 	}
 	/*Lock Sequence */
-	uint32_t lockr = lwgpio->LCKR ;
-	lwgpio->LCKR = (GPIO_LCKR_LCKK_Msk) | lockr ;
-	lwgpio->LCKR = (~GPIO_LCKR_LCKK_Msk) & lockr ;
-	lwgpio->LCKR = (GPIO_LCKR_LCKK_Msk) | lockr ;
-	lockr = lwgpio->LCKR ;
+	uint32_t lockr = gpio->LCKR ;
+	gpio->LCKR = (GPIO_LCKR_LCKK_Msk) | lockr ;
+	gpio->LCKR = (~GPIO_LCKR_LCKK_Msk) & lockr ;
+	gpio->LCKR = (GPIO_LCKR_LCKK_Msk) | lockr ;
+	lockr = gpio->LCKR ;
 	if ( lockr&GPIO_LCKR_LCKK_Msk ){
 		return ERR_FAULT ;
 	}
-	lockr = lwgpio->LCKR ;
+	lockr = gpio->LCKR ;
 	if ( !(lockr&GPIO_LCKR_LCKK_Msk) ){
 		return ERR_FAULT ;
 	}

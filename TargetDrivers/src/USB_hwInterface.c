@@ -5,9 +5,10 @@
  *      Author: mrashada
  */
 
-#include "../../lwUSB/lwUSB.h"
-#include "../../lwUSB/lwUSB_Opts.h"
 #include "Common.h"
+#include "../../lwUSB/lwUSB.h"
+#include "Pbuffi.h"
+
 #define LWUSB_USB_TYPEDEF USB
 #define STM32F103_USB_TRANSCEIVER_STARTUP_US 1u
 #define STM32F103_USB_PERIPHERAL_RESET_DELAY_NS 1u
@@ -27,7 +28,7 @@ static inline err_t lwUSB_InitializeTranceivers( void )
 	/* Enable Tranceivers */
 	USB->CNTR &= ~USB_CNTR_PDWN_Msk  ;
 	/* wait for T_startup */
-	lw_waitfor_us(STM32F103_USB_TRANSCEIVER_STARTUP_US);
+	_waitfor_us(STM32F103_USB_TRANSCEIVER_STARTUP_US);
 	/* Exit Reset State*/
 	USB->CNTR &= ~USB_CNTR_FRES_Msk ;
 	while( USB->CNTR & USB_CNTR_FRES_Msk ) ;
@@ -41,9 +42,9 @@ static inline err_t lwUSB_InitializeTranceivers( void )
 static inline err_t lwUSB_PerphReset( void )
 {
 	RCC->APB1RSTR |= RCC_APB1RSTR_USBRST_Msk ;
-	lw_waitfor_ns(STM32F103_USB_PERIPHERAL_RESET_DELAY_NS);
+	_waitfor_ns(STM32F103_USB_PERIPHERAL_RESET_DELAY_NS);
 	RCC->APB1RSTR &= ~(RCC_APB1RSTR_USBRST_Msk);
-	lw_waitfor_ns(STM32F103_USB_PERIPHERAL_RESET_DELAY_NS);
+	_waitfor_ns(STM32F103_USB_PERIPHERAL_RESET_DELAY_NS);
 	return ERR_OK ;
 
 }
@@ -66,11 +67,11 @@ static inline err_t lwUSB_Disable( void )
 
 static inline err_t lwUSB_Enable_NVIC_IRQ( void )
 {
-	__NVIC_SetPriority(USB_HP_IRQn ,NVIC_EncodePriority(LW_PRIO_GROUP, 1UL , 0UL) );
+	__NVIC_SetPriority(USB_HP_IRQn ,NVIC_EncodePriority(TARGET_PRIO_GROUP, 1UL , 0UL) );
 	__NVIC_EnableIRQ(USB_HP_IRQn);
-	__NVIC_SetPriority(USB_LP_IRQn ,NVIC_EncodePriority(LW_PRIO_GROUP, 2UL , 0UL) );
+	__NVIC_SetPriority(USB_LP_IRQn ,NVIC_EncodePriority(TARGET_PRIO_GROUP, 2UL , 0UL) );
 	__NVIC_EnableIRQ(USB_LP_IRQn);
-	__NVIC_SetPriority(USBWakeUp_IRQn ,NVIC_EncodePriority(LW_PRIO_GROUP, 1UL , 0UL) );
+	__NVIC_SetPriority(USBWakeUp_IRQn ,NVIC_EncodePriority(TARGET_PRIO_GROUP, 1UL , 0UL) );
 	__NVIC_EnableIRQ(USBWakeUp_IRQn);
 
 	return ERR_OK ;
@@ -138,7 +139,7 @@ err_t lwUSB_hwRegisterReset( void ){
 
 err_t lwUSB_hwMemoryReset( void ){
 
-	lwUSB_pmaInit();
+	USB_pmaInit();
 	return ERR_OK ;
 }
 
@@ -166,23 +167,23 @@ err_t lwUSB_hwSetAddress( uint8_t Address ){
 
 int32_t lwUSB_hwWriteData( uint8_t lwEPNum , uint8_t * lwData , uint16_t lwLen ){
 
-	int32_t status = lwUSB_pmaWrite(lwEPNum, lwData , lwLen);
+	int32_t status = USB_pmaWrite(lwEPNum, lwData , lwLen);
 	if ( status < 0 ){
 		return ERR_FAULT ;
 	}
-	lwUSB_pmaWriteNumBytes(lwEPNum ,lwLen);
+	USB_pmaWriteNumBytes(lwEPNum ,lwLen);
 	return status;
 }
 
 
 int32_t lwUSB_hwReadData( uint8_t lwEPNum , uint8_t* lwData ){
 
-	int32_t status = lwUSB_pmaGetNumBytes( lwEPNum );
+	int32_t status = USB_pmaGetNumBytes( lwEPNum );
 	int32_t Length = status ;
 	if ( status < 0 ){
 		return ERR_FAULT ;
 	}
-	lwUSB_pmaRead( lwEPNum , lwData, Length );
+	USB_pmaRead( lwEPNum , lwData, Length );
 	return Length ;
 }
 
@@ -220,11 +221,11 @@ void  lwUSB_hwClearSetupFlag(  uint8_t lwEPNum  ){
 }
 
 int32_t lwUSB_hwGetNumReceivedBytes ( uint8_t lwEPNum ){
-	return lwUSB_pmaGetNumBytes( lwEPNum );
+	return USB_pmaGetNumBytes( lwEPNum );
 }
 
 int32_t lwUSB_hwWriteNumTransmittedBytes ( uint8_t lwEPNum , uint32_t lwLen ){
-	return lwUSB_pmaWriteNumBytes(lwEPNum ,lwLen);
+	return USB_pmaWriteNumBytes(lwEPNum ,lwLen);
 }
 
 int32_t lwUSB_hwConfigureEndPoint ( uint8_t lwEPNum , uint8_t lwEPAddr , uint8_t lwEPType , uint8_t lwEPDir ){
@@ -251,13 +252,13 @@ int32_t lwUSB_hwConfigureEndPoint ( uint8_t lwEPNum , uint8_t lwEPAddr , uint8_t
 
 void * lwUSB_hwAllocate( uint8_t lwEPNum , size_t lwSize , uint8_t lwEPType , uint8_t lwEPDirection ){
 
-	void* retval =  lwUSB_pmaAllocate(lwEPNum, lwSize);
+	void* retval =  USB_pmaAllocate(lwEPNum, lwSize);
 
 	if ( retval && lwEPDirection == e_lwUSB_EndPoint_Direction_IN ){
-		lwUSB_pmaWriteTXEntry(lwEPNum, retval ) ;
+		USB_pmaWriteTXEntry(lwEPNum, retval ) ;
 	}
 	else if ( retval && lwEPDirection == e_lwUSB_EndPoint_Direction_OUT ){
-		lwUSB_pmaWriteRXEntry(lwEPNum ,retval , lwSize);
+		USB_pmaWriteRXEntry(lwEPNum ,retval , lwSize);
 
 	}
 

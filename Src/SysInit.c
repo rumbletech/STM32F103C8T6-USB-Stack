@@ -5,7 +5,7 @@
 
 
 #include <main.h>
-
+#include <Common.h>
 
 /* RCC AND FLASH Configuration *************************************************************
  * *****************************************************************************************
@@ -27,51 +27,51 @@
 
 
 
-s_lwGPIO_Config pc13 = { .conf  = e_lwGPIO_conf_PP ,
-						 .mode  = e_lwGPIO_mode_output_10M ,
+s_GPIO_Config pc13 = { .conf  = e_GPIO_conf_PP ,
+						 .mode  = e_GPIO_mode_output_10M ,
 						 .pin_i = 13u ,
 						 .lock  = 0u
 };
 
-s_lwGPIO_Config pa8 = {  .conf  = e_lwGPIO_conf_AF_PP ,
-						 .mode  = e_lwGPIO_mode_output_50M ,
+s_GPIO_Config pa8 = {  .conf  = e_GPIO_conf_AF_PP ,
+						 .mode  = e_GPIO_mode_output_50M ,
 						 .pin_i = 8 ,
 						 .lock  = 0u
 };
 
-s_lwGPIO_Config pa2 = {  .conf  = e_lwGPIO_conf_AF_PP ,
-						 .mode  = e_lwGPIO_mode_output_10M ,
+s_GPIO_Config pa2 = {  .conf  = e_GPIO_conf_AF_PP ,
+						 .mode  = e_GPIO_mode_output_10M ,
 						 .pin_i = 2 ,
 						 .lock  = 1u
 };
 
-s_lwGPIO_Config pa3 = {  .conf  = e_lwGPIO_conf_floating ,
-						 .mode  = e_lwGPIO_mode_input ,
+s_GPIO_Config pa3 = {  .conf  = e_GPIO_conf_floating ,
+						 .mode  = e_GPIO_mode_input ,
 						 .pin_i = 3 ,
 						 .lock  = 1u
 };
 
-s_lwGPIO_Config pa11 = {  .conf  = e_lwGPIO_conf_AF_PP ,
-						 .mode  = e_lwGPIO_mode_output_50M ,
+s_GPIO_Config pa11 = {  .conf  = e_GPIO_conf_AF_PP ,
+						 .mode  = e_GPIO_mode_output_50M ,
 						 .pin_i = 11 ,
 						 .lock  = 1u
 };
 
-s_lwGPIO_Config pa12 = {  .conf  = e_lwGPIO_conf_AF_PP ,
-						 .mode  = e_lwGPIO_conf_AF_PP ,
+s_GPIO_Config pa12 = {  .conf  = e_GPIO_conf_AF_PP ,
+						 .mode  = e_GPIO_conf_AF_PP ,
 						 .pin_i = 12 ,
 						 .lock  = 1u
 };
 
 
-s_lwUSART_Config usart2 = {
+s_USART_Config usart2 = {
 						     .baudrate     = 115200 ,
 							 .clock_config = DONT_CARE ,
 							 .clock_en     = DONT_CARE ,
-							 .mode         = e_lwUSART_usart_mode_full_duplex ,
-							 .parity       = e_lwUSART_usart_parity_nop ,
-							 .stop_bits    = e_lwUSART_usart_stopbits_1sb ,
-							 .word_len     = e_lwUSART_usart_wordlen_8
+							 .mode         = e_USART_usart_mode_full_duplex ,
+							 .parity       = e_USART_usart_parity_nop ,
+							 .stop_bits    = e_USART_usart_stopbits_1sb ,
+							 .word_len     = e_USART_usart_wordlen_8
 };
 
 static void FLASH_Init( void )
@@ -105,9 +105,9 @@ static void RCC_Init( void )
 	RCC->CFGR |= PLL_SWITCH  ; // SWITCH TO PLL
 
 	// todo
-	/* lw_init should be improved , USING PARAMS TO CALCULATE FREQ AT RUNTIME*/
+	/* _init should be improved , USING PARAMS TO CALCULATE FREQ AT RUNTIME*/
 	uint32_t sys_clk = PLL_MULL_FACTOR * HSE_FREQ ;
-	lw_Init( sys_clk  ,sys_clk/2 , sys_clk , ( sys_clk * 2 )/3 );
+	commonInit( sys_clk  ,sys_clk/2 , sys_clk , ( sys_clk * 2 )/3 );
 
 }
 
@@ -116,32 +116,32 @@ static void RCC_Init( void )
 static void DebugUSART_Init( void )
 {
 	/* Configure PINS */
-	lwGPIO_EnableGPIO(GPIOA);
-	lwGPIO_Config( GPIOA , &pa2);
-	lwGPIO_Config( GPIOA , &pa3 );
+	GPIO_EnableGPIO(GPIOA);
+	GPIO_Config( GPIOA , &pa2);
+	GPIO_Config( GPIOA , &pa3 );
 	/* Init Debug Port */
-	lwUSART_Config(USART2, &usart2);
+	USART_Config(USART2, &usart2);
 
 
 }
 static void USB_Init( void )
 {
-	lwGPIO_EnableGPIO(GPIOA);
-	lwGPIO_Config( GPIOA , &pa11);
-	lwGPIO_Config( GPIOA , &pa12);
-	lwUSB_Init();
+	GPIO_EnableGPIO(GPIOA);
+	GPIO_Config( GPIOA , &pa11);
+	GPIO_Config( GPIOA , &pa12);
+	USB_Init();
 
 }
 static void GPIO_Init( void )
 {
 
 
-	lwGPIO_EnableGPIO(GPIOC);
-	lwGPIO_EnableGPIO(GPIOA);
+	GPIO_EnableGPIO(GPIOC);
+	GPIO_EnableGPIO(GPIOA);
 
-	lwGPIO_Config( GPIOC , &pc13 );
-	lwGPIO_ResetPin(GPIOC, &pc13 );
-	lwGPIO_Config( GPIOA , &pa8 );
+	GPIO_Config( GPIOC , &pc13 );
+	GPIO_ResetPin(GPIOC, &pc13 );
+	GPIO_Config( GPIOA , &pa8 );
 
 }
 

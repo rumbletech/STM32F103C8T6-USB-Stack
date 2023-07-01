@@ -1,5 +1,5 @@
 /*
- * lwCommon.h
+ * Common.h
  *
  *  Created on: Dec 16, 2022
  *      Author: Garmoosh
@@ -16,13 +16,13 @@
 /*********************************************************-- OPTIONS --****************************
  * ***********************************************************************************************
  */
-#define LW_ASSERT_ENABLE 1u
-#define LW_ASSERT_RETURN 0u
-#define LW_DEBUG_ENABLE 1u
-#define LW_INLINE_ENABLE 1u
-#define LW_PRINTF_BUFFER_LEN 200u
-#define LW_DEBUG_PORT USART2
-#define LW_PRIO_GROUP 3UL
+#define TARGET_ASSERT_ENABLE 1u
+#define TARGET_ASSERT_RETURN 0u
+#define TARGET_PRINTF_ENABLE 1u
+#define TARGET_INLINE_ENABLE 1u
+#define TARGET_PRINTF_BUFFER_LEN 200u
+#define TARGET_DEBUG_PORT USART2
+#define TARGET_PRIO_GROUP 3UL
 #define MEM_ALIGNNMENT 4u
 #define MEM_HEAP_SIZE  8192u
 
@@ -55,10 +55,10 @@ struct heap_s{
  ***********************************************************************************************************
  */
 
-#if LW_INLINE_ENABLE == 0U
-#define LW_INLINE
+#if TARGET_INLINE_ENABLE == 0U
+#define TARGET_INLINE
 #else
-#define LW_INLINE
+#define TARGET_INLINE
 #endif
 
 
@@ -73,20 +73,20 @@ typedef int32_t err_t ;
 #define ERR_DEBUG INT32T_CAST(-4)
 #define ERR_NULL  INT32T_CAST(-5)
 /******************************************** DEBUG **********************************************/
-#if LW_DEBUG_ENABLE == 0u
-#define LW_DEBUG(msg,...)
+#if TARGET_PRINTF_ENABLE == 0u
+#define targetPrintf(msg,...)
 #else
-#define LW_DEBUG(...)   (lw_printf( __VA_ARGS__))
+#define targetPrintf(...)   (commonPrintf( __VA_ARGS__))
 #endif
 /******************************************** ASSERT *********************************************/
-#if LW_ASSERT_ENABLE == 0U
-#define LW_ASSERT(CONDITION) ((void*)0UL)
+#if TARGET_ASSERT_ENABLE == 0U
+#define TARGET_ASSERT(CONDITION) ((void*)0UL)
 #else
 
-#if LW_ASSERT_RETURN == 0U
-#define LW_ASSERT(CONDITION) ( (CONDITION) ? ((void)(0)) : (LW_DEBUG("\r\nAssert_Fail at %s at Line(%d)" , __FILE__ ,  __LINE__ ))  )
+#if TARGET_ASSERT_RETURN == 0U
+#define TARGET_ASSERT(CONDITION) ( (CONDITION) ? ((void)(0)) : (targetPrintf("\r\nAssert_Fail at %s at Line(%d)" , __FILE__ ,  __LINE__ ))  )
 #else
-#define LW_ASSERT(CONDITION) ((CONDITION)?((void*)(0)):((LW_DEBUG("\r\nAssert_Fail at %s at Line(%d)", __FILE__, __LINE__ ));return ERR_ASSERT;))
+#define TARGET_ASSERT(CONDITION) ((CONDITION)?((void*)(0)):((targetPrintf("\r\nAssert_Fail at %s at Line(%d)", __FILE__, __LINE__ ));return ERR_ASSERT;))
 #endif
 
 
@@ -124,7 +124,7 @@ extern struct heap_s gheap_s ;
 
 
 #ifndef CPU_FREQ
-#error "CPU_FREQ Not Defined in lwCommon.h"
+#error "CPU_FREQ Not Defined in Common.h"
 #endif
 
 #ifndef FLASH_LATENCY
@@ -147,24 +147,24 @@ extern struct heap_s gheap_s ;
  * LOOP is 3 instructions per iteration
  */
 
-void __attribute__((naked)) lw_waitfor( uint32_t time_ns);
+void __attribute__((naked)) _waitfor( uint32_t time_ns);
 
 /* this function waits for some time , the least time you can get is
  *  4 * Instruction time + flash latency * instruction time
  */
-void __attribute__((naked)) lw_waitfor_cycles ( uint32_t cycles );
+void __attribute__((naked)) _waitfor_cycles ( uint32_t cycles );
 
 
 /* Light weight Printf function %x , %d , %c */
-int lw_printf (char * str, ...);
+int commonPrintf (char * str, ...);
 
 /* Initializes CLOCK VALS */
-void lw_Init( uint32_t SYS_clk , uint32_t APB1_clk , uint32_t APB2_clk , uint32_t USB_clk );
+void commonInit( uint32_t SYS_clk , uint32_t APB1_clk , uint32_t APB2_clk , uint32_t USB_clk );
 
-uint32_t lw_getSYSClk( void );
-uint32_t lw_getAPB1Clk( void );
-uint32_t lw_getAPB2Clk( void );
-uint32_t lw_getUSBClk( void );
+uint32_t commonGetSYSClk( void );
+uint32_t commonGetAPB1Clk( void );
+uint32_t commonGetAPB2Clk( void );
+uint32_t commonGetUSBClk( void );
 
 err_t init_heap ( struct heap_s* mem_heap  , uint8_t * heap  , uint8_t* bk , size_t hp_sz , uint8_t align );
 void* heap_malloc ( struct heap_s * mem_heap , size_t sz ) ;
@@ -173,10 +173,10 @@ int32_t heap_dump ( struct heap_s * mem_heap  ) ;
 
 
 
-#define lw_waitfor_ns(timex) lw_waitfor_cycles(LOOP_TIME_NS*timex)
-#define lw_waitfor_us(timex) lw_waitfor(timex*1000u)
-#define lw_waitfor_ms(timex) lw_waitfor(timex*1000000u)
-#define lw_waitfor_s(timex)  lw_waitfor(timex*1000000000u)
+#define _waitfor_ns(timex) _waitfor_cycles(LOOP_TIME_NS*timex)
+#define _waitfor_us(timex) _waitfor(timex*1000u)
+#define _waitfor_ms(timex) _waitfor(timex*1000000u)
+#define _waitfor_s(timex)  _waitfor(timex*1000000000u)
 
 /* HEAP LOCK Mechanism for Allocation */
 #define HEAP_LOCK()

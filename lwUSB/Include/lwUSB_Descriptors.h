@@ -8,8 +8,8 @@
 #ifndef LWUSB_DESCRIPTORS_H_
 #define LWUSB_DESCRIPTORS_H_
 
-#include "../../lwUSB/lwUSB_Opts.h"
-#include "../../lwUSB/lwUSB_SPECS.h"
+#include "lwUSB_Opts.h"
+#include "lwUSB_SPECS.h"
 
 //todo try to make static
 

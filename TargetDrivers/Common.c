@@ -6,13 +6,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-
-
-
-
 #define MEM_BK_SIZE (MEM_HEAP_SIZE/MEM_ALIGNNMENT/8)
-
-
 
 //todo
 //better implementation
@@ -25,22 +19,22 @@ static uint8_t gheap[MEM_HEAP_SIZE];
 static uint8_t gheap_bk[MEM_BK_SIZE];
 struct heap_s gheap_s ;
 
-uint32_t lw_getSYSClk( void ){
+uint32_t commonGetSYSClk( void ){
 	return sys_clk ;
 }
 
-uint32_t lw_getAPB1Clk( void ){
+uint32_t commonGetAPB1Clk( void ){
 	return apb1_clk ;
 }
-uint32_t lw_getAPB2Clk( void ){
+uint32_t commonGetAPB2Clk( void ){
 	return apb2_clk ;
 }
-uint32_t lw_getUSBClk( void ){
+uint32_t commonGetUSBClk( void ){
 	return usb_clk ;
 }
 
 
-void lw_Init( uint32_t SYS_clk , uint32_t APB1_clk , uint32_t APB2_clk , uint32_t USB_clk )
+void commonInit( uint32_t SYS_clk , uint32_t APB1_clk , uint32_t APB2_clk , uint32_t USB_clk )
 {
 	sys_clk  = SYS_clk  ;
 	apb1_clk = APB1_clk ;
@@ -79,15 +73,6 @@ void __attribute__((naked)) lw_waitfor_cycles ( uint32_t cycles )
 
 }
 
-
-
-
-
-
-
-
-
-
 err_t init_heap ( struct heap_s* mem_heap  , uint8_t * heap  , uint8_t* bk , size_t hp_sz , uint8_t align )
 {
     /* Mandatory Param Check */
@@ -114,7 +99,6 @@ err_t init_heap ( struct heap_s* mem_heap  , uint8_t * heap  , uint8_t* bk , siz
 
     return ERR_OK ;
 }
-
 
 void* heap_malloc ( struct heap_s * mem_heap , size_t sz ) {
 
@@ -168,10 +152,6 @@ void* heap_malloc ( struct heap_s * mem_heap , size_t sz ) {
     if ( free_chunk_sz < sz ) {
         return NULL ;
     }
-    /* Debug*/
-    //todo remove
-//    LW_DEBUG("\r\n   --- Alloc with Begin Index %d  ---" , begin_i ) ;
-//    LW_DEBUG("\r\n   --- Alloc with Begin Index %d  ---" , end_i ) ;
     uint32_t p = (uint32_t)(&mem_heap->heap[(begin_i+1)*mem_heap->heap_align]) ;
     p &= ~( mem_heap->heap_align -1 );
     return (void*)p ;
@@ -228,11 +208,11 @@ int32_t heap_dump ( struct heap_s * mem_heap  ) {
     uint8_t * heap = mem_heap->heap ;
     uint32_t bk_range =  mem_heap->mem_sz/(8u*mem_heap->heap_align) ;
 
-    LW_DEBUG("\r\n------------ Heap Start Address= 0x%x ---------" , (uint32_t)mem_heap->heap ) ;
-    LW_DEBUG("\r\n------------ Heap End Address= 0x%x   ---------" , (uint32_t)(mem_heap->heap)+mem_heap->mem_sz) ;
-    LW_DEBUG("\r\n------------ Total Memory in bytes = %d -----" , mem_heap->mem_sz ) ;
-    LW_DEBUG("\r\n------------ Memory Alignment = %d ----------" , mem_heap->heap_align ) ;
-    LW_DEBUG("\r\n------------ Free Memory = %d ---------------" , mem_heap->free_mem_sz ) ;
+    targetPrintf("\r\n------------ Heap Start Address= 0x%x ---------" , (uint32_t)mem_heap->heap ) ;
+    targetPrintf("\r\n------------ Heap End Address= 0x%x   ---------" , (uint32_t)(mem_heap->heap)+mem_heap->mem_sz) ;
+    targetPrintf("\r\n------------ Total Memory in bytes = %d -----" , mem_heap->mem_sz ) ;
+    targetPrintf("\r\n------------ Memory Alignment = %d ----------" , mem_heap->heap_align ) ;
+    targetPrintf("\r\n------------ Free Memory = %d ---------------" , mem_heap->free_mem_sz ) ;
 
 
 #if defined(MEM_DUMP_FULL_MEMORY) && (MEM_DUMP_FULL_MEMORY != 0 )
@@ -267,7 +247,7 @@ int32_t heap_dump ( struct heap_s * mem_heap  ) {
             cf = !cf ;
         }
         else if ( (bk_val&1) == 1 && cf  ){
-            LW_DEBUG("\r\n--Allocated Chunk[%d] -- Found at Memory Location = 0x%x -- Size = %d " , chunk_i ,(uint32_t)&mem_heap->heap[chunk_loc*mem_heap->heap_align]  , chunk_size ) ;
+        	targetPrintf("\r\n--Allocated Chunk[%d] -- Found at Memory Location = 0x%x -- Size = %d " , chunk_i ,(uint32_t)&mem_heap->heap[chunk_loc*mem_heap->heap_align]  , chunk_size ) ;
             cf = !cf ;
             chunk_i++;
             chunk_size = 0 ;
@@ -286,13 +266,11 @@ int32_t heap_dump ( struct heap_s * mem_heap  ) {
     return  0 ;
 }
 
-
-
-int lw_printf (char * str, ...)
+int commonPrintf (char * str, ...)
 {
 	va_list vl;
 	int i = 0, j=0;
-		char buff[LW_PRINTF_BUFFER_LEN]={0}, tmp[20];
+		char buff[TARGET_PRINTF_BUFFER_LEN]={0}, tmp[20];
 		va_start( vl, str );
 		while (str && str[i])
 		{
@@ -339,13 +317,8 @@ int lw_printf (char * str, ...)
 
 	/* Uart Debug Here*/
 
-	lwUSART_AS_Send( LW_DEBUG_PORT ,(uint8_t*)&buff[0] ,  j ) ;
+	USART_AS_Send( TARGET_DEBUG_PORT ,(uint8_t*)&buff[0] ,  j ) ;
     va_end(vl);
     return j;
  }
-
-
-
-
-
 

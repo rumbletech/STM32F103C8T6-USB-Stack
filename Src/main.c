@@ -4,11 +4,11 @@
 #include <main.h>
 
 
-extern s_lwGPIO_Config pc13 ;
-extern s_lwUSART_Config usart2 ;
-extern s_lwGPIO_Config pa8 ;
-extern s_lwGPIO_Config pa2 ;
-extern s_lwGPIO_Config pa3 ;
+extern s_GPIO_Config pc13 ;
+extern s_USART_Config usart2 ;
+extern s_GPIO_Config pa8 ;
+extern s_GPIO_Config pa2 ;
+extern s_GPIO_Config pa3 ;
 
 
 volatile int32_t usb_state = USB_STATE_IDLE ;
@@ -33,15 +33,15 @@ int main(void)
 	{
 
 //		GPIOC->BSRR = GPIO_BSRR_BS13_Msk ;
-//		lw_waitfor_us(100000);
+//		_waitfor_us(100000);
 //		GPIOC->BSRR = GPIO_BSRR_BR13_Msk ;
-//		lw_waitfor_us(100000);
+//		_waitfor_us(100000);
 
 		if ( usb_state == USB_STATE_RESET )
 		{
 			/* Reset Task */
-			//lwUSB_Init();
-	//		lwUSB_Reset();
+			//USB_Init();
+	//		USB_Reset();
 
 
 			usb_state = USB_STATE_IDLE ;

@@ -5,8 +5,7 @@
 
 /* Packet Buffer Interface for USB Communication USB_PMAADDR */
 
-
-struct lwUSB_btable_buff_entry_s {
+struct USB_btable_buff_entry_s {
 
 	uint32_t addr ;    /* Address of Buffer */
 	uint32_t count ;   /* Size */
@@ -14,24 +13,24 @@ struct lwUSB_btable_buff_entry_s {
 };
 
 /* Defines an Entry in the BTable */
-struct lwUSB_btable_ep_entry_s {
+struct USB_btable_ep_entry_s {
 
-	struct lwUSB_btable_buff_entry_s tx_buff ;	  /* Single Buffered TX */
-	struct lwUSB_btable_buff_entry_s rx_buff ;	  /* Single Buffered RX */
+	struct USB_btable_buff_entry_s tx_buff ;	  /* Single Buffered TX */
+	struct USB_btable_buff_entry_s rx_buff ;	  /* Single Buffered RX */
 
 };
 
 
-struct lwUSB_pma_s {
+struct USB_pma_s {
 
-	struct lwUSB_btable_ep_entry_s btable[LWUSB_PMA_EP_NUM] ;
+	struct USB_btable_ep_entry_s btable[LWUSB_PMA_EP_NUM] ;
 	uint32_t buff_mem[LWUSB_PMA_BUFF_SPACE_SIZE];
 
 
 
 };
 
-struct lwUSB_pmabuffer_s {
+struct USB_pmabuffer_s {
 
 
 	uint32_t * start_addr ;
@@ -42,61 +41,49 @@ struct lwUSB_pmabuffer_s {
 };
 
 
-struct lwUSB_pmacontrol_s {
+struct USB_pmacontrol_s {
 
 	/* Init Check */
 	uint8_t isInitialized ;
 	/* PMA Memory */
-	struct lwUSB_pma_s * lwusb_pma ;
+	struct USB_pma_s * usb_pma ;
 	/* Next Free Address */
 	uint32_t * next_addr ;
 
 };
 
-
-
-volatile static struct lwUSB_pmacontrol_s lwusb_pma_control ;
-
-
+volatile static struct USB_pmacontrol_s usb_pma_control ;
 
 /* Retval : Pointer to the Allocated Memory
  * Param : ep_num , EndPoint Number
  * Param : size   , Size to Allocate in bytes
  */
-void* lwUSB_pmaAllocate( uint32_t ep_num , size_t size  ){
+void* USB_pmaAllocate( uint32_t ep_num , size_t size  ){
 
-	LW_ASSERT( size <= LWUSB_PMA_BUFF_SPACE_SIZE*LWUSB_PMA_BUFF_ALIGNMENT );
-	LW_ASSERT( lwusb_pma_control.isInitialized != 0 );
+	TARGET_ASSERT( size <= LWUSB_PMA_BUFF_SPACE_SIZE*LWUSB_PMA_BUFF_ALIGNMENT );
+	TARGET_ASSERT( usb_pma_control.isInitialized != 0 );
 
 	/* Align */
 	if ( size%LWUSB_PMA_BUFF_ALIGNMENT != 0  ){
 		size+= LWUSB_PMA_BUFF_ALIGNMENT ;
 		size &= ~ (LWUSB_PMA_BUFF_ALIGNMENT-1u );
 	}
-	uint32_t free_mem = UINT32T_CAST(&lwusb_pma_control.lwusb_pma->buff_mem[LWUSB_PMA_BUFF_SPACE_SIZE-1] ) - UINT32T_CAST( lwusb_pma_control.next_addr ) ;
-	uint32_t* ptr = lwusb_pma_control.next_addr  ;
+	uint32_t free_mem = UINT32T_CAST(&usb_pma_control.usb_pma->buff_mem[LWUSB_PMA_BUFF_SPACE_SIZE-1] ) - UINT32T_CAST( usb_pma_control.next_addr ) ;
+	uint32_t* ptr = usb_pma_control.next_addr  ;
 
 	if ( size > free_mem ){
 		return NULL ;
 	}
 
-	lwusb_pma_control.next_addr +=  size/LWUSB_PMA_BUFF_ALIGNMENT ;
+	usb_pma_control.next_addr +=  size/LWUSB_PMA_BUFF_ALIGNMENT ;
 	return ptr ;
 }
 
 
- err_t lwUSB_pmaWrite( uint8_t EPNum , uint8_t * DataPtr , uint32_t len  ){
+ err_t USB_pmaWrite( uint8_t EPNum , uint8_t * DataPtr , uint32_t len  ){
 
-	uint32_t* dest = LWUSB_PMA_GET_SYS_ADDR(lwusb_pma_control.lwusb_pma->btable[EPNum].tx_buff.addr);
+	uint32_t* dest = LWUSB_PMA_GET_SYS_ADDR(usb_pma_control.usb_pma->btable[EPNum].tx_buff.addr);
 	uint16_t* src = (uint16_t*) DataPtr ;
-#ifdef LW_ASSERT_ENABLE
-	LW_ASSERT( lwusb_pma_control.isInitialized != 0 );
-	LW_ASSERT( (uint32_t)dest <= (uint32_t)&lwusb_pma_control.lwusb_pma->buff_mem[LWUSB_PMA_BUFF_SPACE_SIZE-1]);
-	LW_ASSERT( (uint32_t)dest >= (uint32_t)&lwusb_pma_control.lwusb_pma->buff_mem[0]);
-	LW_ASSERT( IS_ALIGNED(dest) );
-	LW_ASSERT( len/LWUSB_PMA_BUFF_ALIGNMENT <= LWUSB_PMA_BUFF_SPACE_SIZE );
-	LW_ASSERT( DataPtr );
-#endif
 	for ( uint32_t i = 0 ; i < len/2 ; len-= 2 ){
 		*(dest++) = *(src++);
 	}
@@ -107,18 +94,10 @@ void* lwUSB_pmaAllocate( uint32_t ep_num , size_t size  ){
 
 }
 
-err_t lwUSB_pmaRead( uint8_t EPNum , uint8_t * DataPtr , uint32_t len  ){
+err_t USB_pmaRead( uint8_t EPNum , uint8_t * DataPtr , uint32_t len  ){
 
-	uint32_t* src  = LWUSB_PMA_GET_SYS_ADDR(lwusb_pma_control.lwusb_pma->btable[EPNum].rx_buff.addr);
+	uint32_t* src  = LWUSB_PMA_GET_SYS_ADDR(usb_pma_control.usb_pma->btable[EPNum].rx_buff.addr);
 	uint16_t* dest = (uint16_t*)DataPtr ;
-#ifdef LW_ASSERT_ENABLE
-	LW_ASSERT( lwusb_pma_control.isInitialized != 0 );
-	LW_ASSERT( (uint32_t)src <= (uint32_t)&lwusb_pma_control.lwusb_pma->buff_mem[LWUSB_PMA_BUFF_SPACE_SIZE-1]);
-	LW_ASSERT( (uint32_t)src >= (uint32_t)&lwusb_pma_control.lwusb_pma->buff_mem[0]);
-	LW_ASSERT( IS_ALIGNED(src) );
-	LW_ASSERT( len/LWUSB_PMA_BUFF_ALIGNMENT <= LWUSB_PMA_BUFF_SPACE_SIZE );
-	LW_ASSERT( DataPtr );
-#endif
 
 	for ( uint32_t i = 0 ; i < len/2 ; len-= 2 ){
 		*(dest++) = *(src++);
@@ -129,66 +108,63 @@ err_t lwUSB_pmaRead( uint8_t EPNum , uint8_t * DataPtr , uint32_t len  ){
 	return ERR_OK ;
 }
 
-int32_t lwUSB_pmaGetNumBytes( uint8_t EPNum  ) {
+int32_t USB_pmaGetNumBytes( uint8_t EPNum  ) {
 
-	if ( lwusb_pma_control.isInitialized == 0 ){
+	if ( usb_pma_control.isInitialized == 0 ){
 		return ERR_FAULT ;
 	}
-	return lwusb_pma_control.lwusb_pma->btable[EPNum].rx_buff.count & 0x3FF ;
+	return usb_pma_control.usb_pma->btable[EPNum].rx_buff.count & 0x3FF ;
 }
 
-int32_t lwUSB_pmaWriteNumBytes( uint8_t EPNum , uint32_t Length ){
+int32_t USB_pmaWriteNumBytes( uint8_t EPNum , uint32_t Length ){
 
-	if ( lwusb_pma_control.isInitialized == 0 ){
+	if ( usb_pma_control.isInitialized == 0 ){
 		return ERR_FAULT ;
 	}
-	lwusb_pma_control.lwusb_pma->btable[EPNum].tx_buff.count = Length ;
+	usb_pma_control.usb_pma->btable[EPNum].tx_buff.count = Length ;
 	return ERR_OK ;
 }
 
-err_t lwUSB_pmaWriteTXEntry( uint32_t ep_num , void *addr ){
+err_t USB_pmaWriteTXEntry( uint32_t ep_num , void *addr ){
 	 /* Assert PMA Initialization */
-	 LW_ASSERT(lwusb_pma_control.isInitialized != 0u );
+	TARGET_ASSERT(usb_pma_control.isInitialized != 0u );
 	 /* Assert Addresses Lie in the buffer memory */
-	 LW_ASSERT( UINT32T_CAST(UINT32T_CAST(addr) ) >= UINT32T_CAST(&lwusb_pma_control.lwusb_pma->buff_mem[0]) ) ;
-	 LW_ASSERT( UINT32T_CAST(UINT32T_CAST(addr) ) <= UINT32T_CAST(&lwusb_pma_control.lwusb_pma->buff_mem[LWUSB_PMA_BUFF_SPACE_SIZE-1]) ) ;
+	TARGET_ASSERT( UINT32T_CAST(UINT32T_CAST(addr) ) >= UINT32T_CAST(&usb_pma_control.usb_pma->buff_mem[0]) ) ;
+	TARGET_ASSERT( UINT32T_CAST(UINT32T_CAST(addr) ) <= UINT32T_CAST(&usb_pma_control.usb_pma->buff_mem[LWUSB_PMA_BUFF_SPACE_SIZE-1]) ) ;
 
 
-	 lwusb_pma_control.lwusb_pma->btable[ep_num].tx_buff.addr = LWUSB_PMA_GET_PMA_ADDR(addr) ;
+	 usb_pma_control.usb_pma->btable[ep_num].tx_buff.addr = LWUSB_PMA_GET_PMA_ADDR(addr) ;
 
 	return ERR_OK ;
 
 }
 
-err_t lwUSB_pmaWriteRXEntry( uint32_t ep_num , void *addr , size_t size  ){
+err_t USB_pmaWriteRXEntry( uint32_t ep_num , void *addr , size_t size  ){
 	 /* Assert PMA Initialization */
-	 LW_ASSERT(lwusb_pma_control.isInitialized != 0u );
+	TARGET_ASSERT(usb_pma_control.isInitialized != 0u );
 	 /* Assert Addresses Lie in the buffer memory */
-	 LW_ASSERT( UINT32T_CAST(UINT32T_CAST(addr) ) >= UINT32T_CAST(&lwusb_pma_control.lwusb_pma->buff_mem[0]) ) ;
-	 LW_ASSERT( UINT32T_CAST(UINT32T_CAST(addr) ) <= UINT32T_CAST(&lwusb_pma_control.lwusb_pma->buff_mem[LWUSB_PMA_BUFF_SPACE_SIZE-1]) ) ;
+	TARGET_ASSERT( UINT32T_CAST(UINT32T_CAST(addr) ) >= UINT32T_CAST(&usb_pma_control.usb_pma->buff_mem[0]) ) ;
+	TARGET_ASSERT( UINT32T_CAST(UINT32T_CAST(addr) ) <= UINT32T_CAST(&usb_pma_control.usb_pma->buff_mem[LWUSB_PMA_BUFF_SPACE_SIZE-1]) ) ;
 
 
-	 lwusb_pma_control.lwusb_pma->btable[ep_num].rx_buff.addr  = LWUSB_PMA_GET_PMA_ADDR(addr) ;
-	 lwusb_pma_control.lwusb_pma->btable[ep_num].rx_buff.count =  ((size/2) <<  USB_COUNT0_RX_NUM_BLOCK_Pos) ;
+	 usb_pma_control.usb_pma->btable[ep_num].rx_buff.addr  = LWUSB_PMA_GET_PMA_ADDR(addr) ;
+	 usb_pma_control.usb_pma->btable[ep_num].rx_buff.count =  ((size/2) <<  USB_COUNT0_RX_NUM_BLOCK_Pos) ;
 
 	return ERR_OK ;
 
 }
 
 
-err_t lwUSB_pmaInit( void ){
+err_t USB_pmaInit( void ){
 
 	/* Point to PMA Base Address */
-	lwusb_pma_control.lwusb_pma =  (struct lwUSB_pma_s*) LWUSB_PMA_START_ADDR ;
+	usb_pma_control.usb_pma =  (struct USB_pma_s*) LWUSB_PMA_START_ADDR ;
 	/* Set to the Predefined Fill Value */
-	memset((void*)lwusb_pma_control.lwusb_pma  , LWUSB_PMA_FILL_VALUE ,  sizeof(struct lwUSB_pma_s) * sizeof(uint32_t));
+	memset((void*)usb_pma_control.usb_pma  , LWUSB_PMA_FILL_VALUE ,  sizeof(struct USB_pma_s) * sizeof(uint32_t));
 	/* Setup the Next Valid Pma Address*/
-	lwusb_pma_control.next_addr = (uint32_t*)&lwusb_pma_control.lwusb_pma->buff_mem[0];
+	usb_pma_control.next_addr = (uint32_t*)&usb_pma_control.usb_pma->buff_mem[0];
 	/* Initialized */
-	lwusb_pma_control.isInitialized = 1u ;
+	usb_pma_control.isInitialized = 1u ;
 
 	return ERR_OK ;
 }
-
-
-
