@@ -7,6 +7,7 @@
 #include "Include/lwUSB_Opts.h"
 // todo remove dependency here
 #include "Common.h"
+#include "lwDebug.h"
 
 #define LWUSB_GET_CONFIG_V_NUM(VALUE) (VALUE-LWUSB_OPTS_CONFIG_VALUE_START)
 #define LWUSB_STRLEN(STR) (strlen((char*)STR))
@@ -439,10 +440,10 @@ static uint32_t lwUSB_Handle_CTR ( uint8_t EPn ){
 	uint8_t EndPointNumber = (uint8_t)state ;
 	//todo remove
 	volatile uint32_t unused ;
-//	LW_ASSERT( EndPointNumber <= LWUSB_OPTS_NUM_HW_EPS-1 );
-//	LW_ASSERT( lwUSB_controller.isInitialized != 0u );
-//	LW_ASSERT( lwUSB_controller.lwUSB_eps[EndPointNumber] != NULL );
-//	LW_ASSERT( lwUSB_controller.lwUSB_eps[EndPointNumber]->EP_isInitialized != 0u );
+	LW_ASSERT( EndPointNumber <= LWUSB_OPTS_NUM_HW_EPS-1 );
+	LW_ASSERT( lwUSB_controller.isInitialized != 0u );
+	LW_ASSERT( lwUSB_controller.lwUSB_eps[EndPointNumber] != NULL );
+	LW_ASSERT( lwUSB_controller.lwUSB_eps[EndPointNumber]->EP_isInitialized != 0u );
 
 	struct lwUSB_ep_s * EndPoint = lwUSB_controller.lwUSB_eps[EndPointNumber] ;
 
@@ -468,8 +469,8 @@ static uint32_t lwUSB_Handle_CTR ( uint8_t EPn ){
 			debug++;
 
 		}
-//		uint16_t request_length = lwUSB_hwReadData( EndPoint->EP_Number , (uint8_t*)&lwUSB_controller.request  );
-//		LW_ASSERT( request_length == sizeof(struct lwUSB_setup_data));
+		uint16_t request_length = lwUSB_hwReadData( EndPoint->EP_Number , (uint8_t*)&lwUSB_controller.request  );
+		LW_ASSERT( request_length == sizeof(struct lwUSB_setup_data));
 		struct lwUSB_setup_data * request = &lwUSB_controller.request ;
 
 		switch( request->bRequest )
@@ -692,7 +693,7 @@ static uint32_t lwUSB_Handle_CTR ( uint8_t EPn ){
 	else{
 		//todo error
 		lwUSB_Protocol_Stall(EndPoint);
-//		LW_DEBUG("CTR Flag Raised with no source ");
+		LW_DEBUG("CTR Flag Raised with no source ");
 		return ERR_FAULT ;
 	}
 
@@ -705,9 +706,9 @@ static uint32_t lwUSB_Handle_CTR ( uint8_t EPn ){
 //todo moved to hw interface only 2 byte sized blocks are used make it work with both 32 and 2
 //todo this function needs a visist with regards to where it fits in the stack
 uint32_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * EndPoint ){
-//	LW_ASSERT( EndPoint != NULL ) ;
-//	LW_ASSERT( EndPoint->EP_Number <= LWUSB_OPTS_NUM_HW_EPS-1 );
-//	LW_ASSERT( EndPoint->EP_Type <= LWUSB_EP_TYPE_MAX );
+	LW_ASSERT( EndPoint != NULL ) ;
+	LW_ASSERT( EndPoint->EP_Number <= LWUSB_OPTS_NUM_HW_EPS-1 );
+	LW_ASSERT( EndPoint->EP_Type <= LWUSB_EP_TYPE_MAX );
 
 	/* Disable Both Channels */
 	lwUSB_DisableChannels(EndPoint);
@@ -723,7 +724,7 @@ uint32_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * EndPoint ){
 		 EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_INOUT ){
 		EndPoint->EP_TxChannel.EP_BufferHandle = (uint8_t*) lwUSB_hwAllocate( EndPoint->EP_Number , EndPoint->EP_TxChannel.EP_Size , EndPoint->EP_Type , e_lwUSB_EndPoint_Direction_IN );
 		if ( EndPoint->EP_TxChannel.EP_BufferHandle == NULL ){
-//			LW_DEBUG("malloc out of memory : EP_TXCHANNEL \r\n");
+			LW_DEBUG("malloc out of memory : EP_TXCHANNEL \r\n");
 			return ERR_NULL ;
 		}
 		lwUSB_hwSetTXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
@@ -733,7 +734,7 @@ uint32_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * EndPoint ){
 		 EndPoint->EP_Direction == e_lwUSB_EndPoint_Direction_INOUT ){
 		EndPoint->EP_RxChannel.EP_BufferHandle  = (uint8_t*) lwUSB_hwAllocate( EndPoint->EP_Number , EndPoint->EP_RxChannel.EP_Size ,  EndPoint->EP_Type , e_lwUSB_EndPoint_Direction_OUT  );
 		if ( EndPoint->EP_RxChannel.EP_BufferHandle == NULL ){
-//			LW_DEBUG("malloc out of memory : EP_RXCHANNEL \r\n");
+			LW_DEBUG("malloc out of memory : EP_RXCHANNEL \r\n");
 			return ERR_NULL ;
 		}
 		lwUSB_hwSetRXResponse( EndPoint->EP_Number , e_lwUSB_EndPoint_State_Stall);
@@ -806,7 +807,7 @@ struct lwUSB_interface_s * lwUSB_CreateInterface ( uint8_t * IString ) {
 		StringIndex = lwUSB_controller.nextStringIndex++ ;
 		interface->string = LWUSB_REGISTER_STRING_UTF16( StringIndex , IString );
 		if ( !interface->string ){
-//			LW_DEBUG("String NULL for lwUSB_CreateInterface with S= %s \r\n" , IString );
+			LW_DEBUG("String NULL for lwUSB_CreateInterface with S= %s \r\n" , IString );
 		}
 	}
 
@@ -844,7 +845,7 @@ struct lwUSB_configuration_s *  lwUSB_CreateConfiguration ( uint8_t * IString ){
 		config->string = LWUSB_REGISTER_STRING_UTF16( StringIndex , IString );
 
 		if ( !config->string ){
-//			LW_DEBUG("String NULL for lwUSB_CreateConfiguration with S= %s \r\n" , IString );
+			LW_DEBUG("String NULL for lwUSB_CreateConfiguration with S= %s \r\n" , IString );
 		}
 	}
 
