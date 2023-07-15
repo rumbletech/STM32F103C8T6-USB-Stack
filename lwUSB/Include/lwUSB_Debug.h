@@ -35,4 +35,6 @@
 #endif
 
 
+#define ERRS_BAD_ARGS " ERR_BAD_ARGS"
+
 #endif /* LW_DEBUG_H_ */

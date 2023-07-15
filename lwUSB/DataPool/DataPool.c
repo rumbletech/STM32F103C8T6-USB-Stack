@@ -102,27 +102,27 @@ void DataPool_Init( struct DataPool_s * dp , uint8_t * pool_b , size_t pool_sz )
 	return ;
 }
 
-void DataPool_Push( struct DataPool_s * dp , struct DataUnit_s du ){
+uint8_t DataPool_Push( struct DataPool_s * dp , struct DataUnit_s du ){
 
 	uint32_t freeSpace = DataPool_GetFreeSpace(dp);
 	uint32_t totalSize = du.info.length + sizeof( struct DataInfo_s );
 	if ( totalSize > freeSpace ){
 		DP_PRINT("DP: > d\r\n");
-		return;
+		return 0u;
 	}
 	write( dp , (uint8_t*)&du.info , sizeof(struct DataInfo_s) );
 	write( dp , du.data , du.info.length );
-	return ;
+	return 1u;
 }
 
-void DataPool_Get( struct DataPool_s * dp , struct DataUnit_s * du ){
+uint8_t DataPool_Get( struct DataPool_s * dp , struct DataUnit_s * du ){
 
 	uint32_t usedSpace = DataPool_GetUsedSpace(dp);
 	uint32_t totalSize = sizeof(struct DataInfo_s) ;
 
 	if ( usedSpace < totalSize ){
 		DP_PRINT("DP: < d\r\n");
-		return;
+		return 0u;
 	}
 	read( dp , (uint8_t*)&du->info , sizeof(struct DataInfo_s) );
 	usedSpace = DataPool_GetUsedSpace(dp);
@@ -130,9 +130,9 @@ void DataPool_Get( struct DataPool_s * dp , struct DataUnit_s * du ){
 
 	if ( usedSpace < totalSize ){
 		DP_PRINT("DP: < d\r\n");
-		return;
+		return 0u;
 	}
 	read( dp , du->data , du->info.length );
 
-	return ;
+	return 1u;
 }

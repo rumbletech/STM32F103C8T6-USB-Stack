@@ -9,6 +9,7 @@
 #define LWUSB_H_
 
 #include "Include/lwUSB_SPECS.h"
+#include "Include/lwUSB_Std.h"
 #include <stddef.h>
 
 /* Constants */
@@ -28,6 +29,19 @@
  * it currently does not support alternate interfaces
  *
  */
+
+
+enum lwUSB_BusEvent_e {
+	lwUSB_BusEvent_e_Start = LWUSB_BUS_EVENTS_S,
+	lwUSB_BusEvent_e_RESET,
+	lwUSB_BusEvent_e_SUSPEND,
+	lwUSB_BusEvent_e_RX,
+	lwUSB_BusEvent_e_TX,
+	lwUSB_BusEvent_e_SETUP,
+	lwUSB_BusEvent_e_ERR,
+	lwUSB_BusEvent_e_WAKEUP,
+	lwUSB_BusEvent_e_End = LWUSB_BUS_EVENTS_S  + LWUSB_INTERNAL_EVENTS_S + 1u,
+};
 
 struct lwUSB_interface_s {
 
@@ -142,132 +156,11 @@ struct lwUSB_ep_s {
 };
 
 
+/* Exposed User Functions */
+#include "User_F.h"
 
 
-/* These Functions Need To be Implemented Based on the Hardware */
 
-/* This Function Should Perform Initial Setup of USB Registers and Setup the Hardware/Transceivers*/
-int32_t lwUSB_hwInit( void );
-
-/* This Function Should Disable all USB Communication */
-int32_t lwUSB_hwDisable( void );
-
-/* This Function Should Enable all USB Communication */
-int32_t lwUSB_hwEnable( void );
-
-/* This Function Should Perform a Register Reset ,
- * - it should Disable all Endpoints.
- * it is called if a reset Request is received */
-int32_t lwUSB_hwRegisterReset( void );
-
-
-/* This Function Should Perform a Packet Memory Reset ,
- * - it should Re
- * it is called if a reset Request is received */
-int32_t lwUSB_hwMemoryReset( void );
-
-
-/* This Function Initializes an EndPoint
- * -it should Create Valid Packet Buffer Handles for the EndPoint */
-int32_t lwUSB_hwInitializeEP( struct lwUSB_ep_s * lwEP );
-
-
-/* This Function Writes Data to an EndPoint Channel through its already Initialized Packet Memory Handle
- */
-int32_t lwUSB_hwWriteData( uint8_t lwEPNum , uint8_t * lwData , uint16_t lwLen );
-
-
-/* This Function Reads Data from an EndPoint Channel through its already Initialized Packet Memory Handle
- */
-int32_t lwUSB_hwReadData( uint8_t lwEPNum , uint8_t* lwData );
-
-/* This Function Sets the Address of the Device */
-int32_t lwUSB_hwSetAddress( uint8_t Address );
-
-/* This Function Sets Status return on the next IN Transaction */
-
-int32_t  lwUSB_hwSetTXResponse ( uint8_t lwEPNum ,  uint8_t lwResp );
-
-
-/* This Function Sets Status return on the next OUT Transaction */
-
-int32_t  lwUSB_hwSetRXResponse ( uint8_t lwEPNum  ,  uint8_t lwResp );
-
-
-/* This Function Sets Data Toggle in IN Data Stages */
-
-int32_t  lwUSB_hwSetTXDataToggle ( void  );
-
-/* This Function Clears Data Toggle in IN Data Stages */
-
-int32_t  lwUSB_hwClearTXDataToggle ( void  );
-
-
-/* This Function Sets Data Toggle in OUT Data Stages */
-
-int32_t  lwUSB_hwSetRXDataToggle ( void  );
-
-/* This Function Clears Data Toggle in OUT Data Stages */
-
-int32_t  lwUSB_hwClearRXDataToggle ( void  );
-
-
-/* This Function returns True if the HW Detected and Completed a Setup Stage after receiving  a PID Token with Setup */
-
-int32_t  lwUSB_hwIsSetupFlag (  uint8_t lwEPNum  );
-
-/* This Function Tells if the Transaction that was completed was an IN */
-
-int32_t  lwUSB_hwIsINFlag (  uint8_t lwEPNum  );
-
-/* This Function Tells if the Transaction that was completed was an OUT */
-
-int32_t  lwUSB_hwIsOUTFlag (  uint8_t lwEPNum  );
-
-/* Clears IN Transmission Complete Flag */
-void  lwUSB_hwClearINFlag(  uint8_t lwEPNum  );
-
-/* Clears OUT Transmission Complete Flag */
-void  lwUSB_hwClearOUTFlag(  uint8_t lwEPNum  );
-
-/* Clears Setup Transmission Complete Flag */
-void  lwUSB_hwClearSetupFlag(  uint8_t lwEPNum  );
-
-/* This Function returns True if a Reset Condition is Detected  */
-
-int32_t  lwUSB_hwIsResetFlag ( void  );
-
-/* This Function Clears Reset Condition Flags  */
-
-int32_t  lwUSB_hwClearResetFlag ( void  );
-/* This Function returns True if a Suspend Condition is Detected  */
-
-int32_t  lwUSB_hwIsSuspendFlag ( void  );
-
-/* This Function Clears Suspend Condition Flags  */
-
-int32_t  lwUSB_hwClearSuspendFlag ( void  );
-
-/* This Function returns True if a Suspend Condition is Detected  */
-
-int32_t  lwUSB_hwIsTransactionComplete ( void  );
-
-/* This Function Clears Transaction Complete Condition Flags  */
-
-int32_t  lwUSB_hwClearTransactionCompleteFlag ( void  );
-
-/* Gets Number of Received Bytes from the Hardware */
-int32_t lwUSB_hwGetNumReceivedBytes ( uint8_t lwEPNum );
-
-/* Writes Number of to be Transmitted Bytes to the Hardware */
-int32_t lwUSB_hwWriteNumTransmittedBytes ( uint8_t lwEPNum , uint32_t lwLen );
-
-/* Configures EndPoint Properties */
-int32_t lwUSB_hwConfigureEndPoint ( uint8_t lwEPNum , uint8_t lwEPAddr , uint8_t lwEPType , uint8_t lwEPDir );
-
-/* Allocates Space for the EndPoint */
-
-void * lwUSB_hwAllocate( uint8_t lwEPNum , size_t lwSize , uint8_t lwEPType , uint8_t lwEPDirection );
 
 
 

@@ -393,9 +393,7 @@ static uint32_t lwUSB_Copy_Configuration ( uint8_t * dest , struct lwUSB_configu
 	if ( p != config->d_configuration->wTotalLength ){
 		return ERR_FAULT ;
 	}
-
 	return ERR_OK ;
-
 }
 
 static uint32_t lwUSB_GetEndPointByAddress( uint8_t EPn ){

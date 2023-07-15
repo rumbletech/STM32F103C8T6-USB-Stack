@@ -20,20 +20,14 @@ static uint32_t usb_state = 0;
  */
 void USB_HP_CAN_TX_IRQHandler ( void )
 {
-
 	while(1);
-
 }
-
 
 /* Triggered by all USB events  (Correct transfer, USB reset, etc.).
  * The firmware has to check the interrupt source before serving the interrupt.
  */
 void USB_LP_CAN_RX0_IRQHandler ( void )
 {
-
-	static int  reset_count = 0 ;
-
 	if ( USB->ISTR & USB_ISTR_RESET_Msk ){
 		resetCounter++;
 		//Clear Flag
@@ -43,9 +37,14 @@ void USB_LP_CAN_RX0_IRQHandler ( void )
 		usb_state = USB_STATE_RESET;
 	}
 	else if ( USB->ISTR & USB_ISTR_CTR_Msk ){
+		USB->ISTR &= ~ USB_ISTR_CTR_Msk  ;
 		/* Handle Transfer*/
 		lwUSB_Handle_CTR( USB->ISTR & USB_ISTR_EP_ID_Msk );
 		usb_state = USB_STATE_CTR ;
+	}
+	else if ( USB->ISTR & USB_ISTR_SUSP_Msk ){
+		USB->ISTR &= ~ USB_ISTR_SUSP_Msk  ;
+		usb_state = USB_STATE_SUSP ;
 	}
 	else if ( USB->ISTR & USB_ISTR_SOF_Msk ){
 		USB->ISTR &= ~USB_ISTR_SOF_Msk ;
