@@ -40,7 +40,7 @@ enum lwUSB_BusEvent_e {
 	lwUSB_BusEvent_e_SETUP,
 	lwUSB_BusEvent_e_ERR,
 	lwUSB_BusEvent_e_WAKEUP,
-	lwUSB_BusEvent_e_End = LWUSB_BUS_EVENTS_S  + LWUSB_INTERNAL_EVENTS_S + 1u,
+	lwUSB_BusEvent_e_End = LWUSB_BUS_EVENTS_S  + LWUSB_ENUM_TYPE_S + 1u,
 };
 
 struct lwUSB_interface_s {

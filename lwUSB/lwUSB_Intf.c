@@ -12,23 +12,21 @@
  * ***********************************************************************
  */
 
-#include "DataPool/DataPool.h"
+#include "lwUSB_Intf.h"
+#include "Event/Event.h"
+#include "Arbiter.h"
 #include "Include/lwUSB_Err.h"
-#include "lwUSB.h"
 
-#define INTF_POOL_SZ 512u
-static uint8_t intfPool_b[INTF_POOL_SZ];
-static struct DataPool_s intfPool;
+static struct DataPool_s * intfPool;
 
-void lwUSB_Intf_Init ( void ){
-
-	DataPool_Init(&intfPool, &intfPool_b[0ul], INTF_POOL_SZ);
+void lwUSB_Intf_Init ( struct DataPool_s * pool ){
+	intfPool = pool ;
 	return;
 }
 
 static void sigInternal( uint32_t evid ){
 	struct Event_s * ev = getEventbyID(evid);
-	setEvent(ev);
+	Event_Set(ev);
 	return ;
 }
 
@@ -39,7 +37,7 @@ void lwUSB_Intf_SignalBusEvents(enum lwUSB_BusEvent_e busEvent_e ){
 void lwUSB_Intf_PushData( uint8_t epNum , uint8_t* epData , uint16_t epDataSz ){
 
 	struct DataUnit_s du = makeDataUnit(epData, makeDataInfo(epDataSz, epNum));
-	uint8_t ps = DataPool_Push(&intfPool, du);
+	uint8_t ps = DataPool_Push(intfPool, du);
 	if ( !ps ){
 		sigInternal(lwUSB_InternalEvents_e_OVF);
 	}

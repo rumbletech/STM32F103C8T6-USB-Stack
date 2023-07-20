@@ -34,7 +34,7 @@ uint8_t DataPool_isFull( struct DataPool_s * dp );
 uint8_t DataPool_isEmpty( struct DataPool_s * dp );
 uint32_t DataPool_GetUsedSpace ( struct DataPool_s * dp  );
 uint32_t DataPool_GetFreeSpace( struct DataPool_s * dp);
-void DataPool_Init( struct DataPool_s * dp , uint8_t * pool_b , size_t pool_sz );
+void DataPool_Init( struct DataPool_s * dp , uint8_t * pool_b , uint32_t pool_sz );
 uint8_t DataPool_Push( struct DataPool_s * dp , struct DataUnit_s du );
 uint8_t DataPool_Get( struct DataPool_s * dp , struct DataUnit_s * du );
 

@@ -87,7 +87,7 @@ uint32_t DataPool_GetUsedSpace ( struct DataPool_s * dp  ){
 	return dp->internBufferSize_l - DataPool_GetFreeSpace(dp);
 }
 
-void DataPool_Init( struct DataPool_s * dp , uint8_t * pool_b , size_t pool_sz ){
+void DataPool_Init( struct DataPool_s * dp , uint8_t * pool_b , uint32_t pool_sz ){
 
 	if ( dp == NULL || pool_b == NULL ){
 		DP_PRINT("DP: NULL d\r\n");
