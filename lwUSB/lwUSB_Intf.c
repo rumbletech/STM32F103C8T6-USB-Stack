@@ -24,14 +24,10 @@ void lwUSB_Intf_Init ( struct DataPool_s * pool ){
 	return;
 }
 
-static void sigInternal( uint32_t evid ){
-	struct Event_s * ev = getEventbyID(evid);
+void lwUSB_Intf_SignalBusEvents(enum lwUSB_BusEvent_e busEvent_e ){
+	struct Event_s * ev = getEventbyID(busEvent_e);
 	Event_Set(ev);
 	return ;
-}
-
-void lwUSB_Intf_SignalBusEvents(enum lwUSB_BusEvent_e busEvent_e ){
-	sigInternal(busEvent_e);
 }
 
 void lwUSB_Intf_PushData( uint8_t epNum , uint8_t* epData , uint16_t epDataSz ){

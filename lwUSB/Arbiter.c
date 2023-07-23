@@ -8,8 +8,10 @@
  */
 #include "lwUSB_Intf.h"
 #include "Event/Event.h"
+#include "HAL/Hal.h"
 #include "Include/lwUSB_Debug.h"
 #include "BusHandlers.h"
+
 #define INTF_POOL_SZ 512u
 #define BUS_EVENTS_SZ 32u
 

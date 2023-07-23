@@ -23,8 +23,6 @@
 #include "../lwUSB_Intf.h"
 #include <stdarg.h>
 
-#define NO_SIGNAL() goto EVT_NO_SIGNAL
-
 void HAL_notifyEvent ( enum lwUSB_BusEvent_e event_e , ... ){
 
     va_list args;
@@ -45,15 +43,23 @@ void HAL_notifyEvent ( enum lwUSB_BusEvent_e event_e , ... ){
     	uint8_t* epData = (uint8_t*) va_arg(args,void*);
     	uint16_t epDataSz = (uint16_t) va_arg(args,int);
     	lwUSB_Intf_PushData(epNum,epData,epDataSz);
-        NO_SIGNAL();
     }
-
+    break ;
     case lwUSB_BusEvent_e_RESET :
+    {
 
+
+    }
+    break;
     case lwUSB_BusEvent_e_ERR :
+    {
 
+    }
+    break;
     case lwUSB_BusEvent_e_SUSPEND :
-
+    {
+    }
+    break;
     default :
     	break;
 
@@ -61,14 +67,11 @@ void HAL_notifyEvent ( enum lwUSB_BusEvent_e event_e , ... ){
 
 	/* Signal the Event */
     lwUSB_Intf_SignalBusEvents(event_e);
-
-EVT_NO_SIGNAL:
-
     va_end(args);
     return;
 }
 
-static void HAL_handleEvent ( enum lwUSB_BusEvent_e event_e , ... ){
+void HAL_handleEvent ( enum lwUSB_BusEvent_e event_e , ... ){
 
     va_list args;
     va_start(args, event_e);
@@ -112,11 +115,11 @@ static void HAL_handleEvent ( enum lwUSB_BusEvent_e event_e , ... ){
 WEAK void HAL_TxHandler(uint8_t epNum ,  uint8_t * dataPtr , uint16_t dataSz ){
 }
 
-WEAK void HAL_ResetHandler(){
+WEAK void HAL_ResetHandler(void){
 }
 
-WEAK void HAL_ErrorHandler(){
+WEAK void HAL_ErrorHandler(void){
 }
 
-WEAK void HAL_SuspendHandler(){
+WEAK void HAL_SuspendHandler(void){
 }

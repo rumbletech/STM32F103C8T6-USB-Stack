@@ -61,8 +61,6 @@ struct heap_s{
 #define TARGET_INLINE
 #endif
 
-
-
 typedef int32_t err_t ;
 
 /*************************************** ERR CODES ********************************************/

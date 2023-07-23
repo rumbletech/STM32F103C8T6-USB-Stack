@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 void HAL_notifyEvent ( enum lwUSB_BusEvent_e event_e , ... );
+void HAL_handleEvent ( enum lwUSB_BusEvent_e event_e , ... );
 void HAL_TxHandler(uint8_t epNum ,  uint8_t * dataPtr , uint16_t dataSz );
 void HAL_ResetHandler();
 void HAL_ErrorHandler();

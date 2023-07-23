@@ -5,11 +5,13 @@
  *      Author: mrashada
  */
 
-#include "Common.h"
-#include "../../lwUSB/lwUSB.h"
+#include "USB_hwInterface.h"
 #include "Pbuffi.h"
 
+#define HW_NUM_EPS 8u
+
 #define LWUSB_USB_TYPEDEF USB
+
 #define STM32F103_USB_TRANSCEIVER_STARTUP_US 1u
 #define STM32F103_USB_PERIPHERAL_RESET_DELAY_NS 1u
 
@@ -23,7 +25,7 @@
 #define LWUSB_CLEAR_CTR_RX(EPXR)       *(EPXR) = (((*EPXR)&(~USB_EP0R_CTR_RX_Msk))&LWUSB_SAVE_EP_TOGG)
 #define LWUSB_CLEAR_CTR_TX(EPXR)       *(EPXR) = (((*EPXR)&(~USB_EP0R_CTR_TX_Msk))&LWUSB_SAVE_EP_TOGG)
 
-static inline err_t lwUSB_InitializeTranceivers( void )
+static inline err_t InitializeTranceivers( void )
 {
 	/* Enable Tranceivers */
 	USB->CNTR &= ~USB_CNTR_PDWN_Msk  ;
@@ -39,7 +41,7 @@ static inline err_t lwUSB_InitializeTranceivers( void )
 }
 
 
-static inline err_t lwUSB_PerphReset( void )
+static inline err_t PerphReset( void )
 {
 	RCC->APB1RSTR |= RCC_APB1RSTR_USBRST_Msk ;
 	_waitfor_ns(STM32F103_USB_PERIPHERAL_RESET_DELAY_NS);
@@ -51,7 +53,7 @@ static inline err_t lwUSB_PerphReset( void )
 
 
 
-static inline err_t lwUSB_Enable( void )
+static inline err_t Enable( void )
 {
 	RCC->APB1ENR|= RCC_APB1ENR_USBEN_Msk ;
 	return ERR_OK ;
@@ -59,13 +61,13 @@ static inline err_t lwUSB_Enable( void )
 
 
 
-static inline err_t lwUSB_Disable( void )
+static inline err_t Disable( void )
 {
 	RCC->APB1ENR&= ~RCC_APB1ENR_USBEN_Msk ;
 	return ERR_OK ;
 }
 
-static inline err_t lwUSB_Enable_NVIC_IRQ( void )
+static inline err_t Enable_NVIC_IRQ( void )
 {
 	__NVIC_SetPriority(USB_HP_IRQn ,NVIC_EncodePriority(TARGET_PRIO_GROUP, 1UL , 0UL) );
 	__NVIC_EnableIRQ(USB_HP_IRQn);
@@ -78,7 +80,7 @@ static inline err_t lwUSB_Enable_NVIC_IRQ( void )
 
 }
 
-static inline err_t lwUSB_Disable_NVIC_IRQ( void )
+static inline err_t Disable_NVIC_IRQ( void )
 {
 	__NVIC_DisableIRQ(USB_HP_IRQn);
 	__NVIC_DisableIRQ(USB_LP_IRQn);
@@ -87,7 +89,7 @@ static inline err_t lwUSB_Disable_NVIC_IRQ( void )
 	return ERR_OK ;
 }
 
-static inline err_t lwUSB_Clear_NVIC_IRQ( void )
+static inline err_t Clear_NVIC_IRQ( void )
 {
 	__NVIC_ClearPendingIRQ(USB_HP_IRQn);
 	__NVIC_ClearPendingIRQ(USB_LP_IRQn);
@@ -97,22 +99,22 @@ static inline err_t lwUSB_Clear_NVIC_IRQ( void )
 }
 
 
-err_t lwUSB_hwInit( void ){
+err_t hwInit( void ){
 
 	/* Disable USB NVIC Line */
-	lwUSB_Disable_NVIC_IRQ();
+	Disable_NVIC_IRQ();
 	/* Clear Pending */
-	lwUSB_Clear_NVIC_IRQ();
+	Clear_NVIC_IRQ();
 	/* Disable Perihperal */
-	lwUSB_Disable();
+	Disable();
 	/* Reset Peripheral */
-	lwUSB_PerphReset();
+	PerphReset();
 	/* Enable Peripheral */
-	lwUSB_Enable();
+	Enable();
 	/* Initialize HW Transceivers */
-	lwUSB_InitializeTranceivers();
+	InitializeTranceivers();
 	/* Enable NVIC IRQ */
-	lwUSB_Enable_NVIC_IRQ();
+	Enable_NVIC_IRQ();
 
 	/* Clear Pending IRQ*/
 	USB->ISTR &= ~( USB_ISTR_WKUP_Msk | USB_ISTR_ERR_Msk | USB_ISTR_ESOF_Msk | USB_ISTR_PMAOVR_Msk | USB_ISTR_RESET_Msk |
@@ -125,47 +127,43 @@ err_t lwUSB_hwInit( void ){
 
 }
 
-err_t lwUSB_hwRegisterReset( void ){
+err_t hwRegisterReset( void ){
 
-	for ( int32_t i = 0 ; i < LWUSB_OPTS_NUM_HW_EPS ; i++){
+	for ( int32_t i = 0 ; i < HW_NUM_EPS ; i++){
 		uint32_t * epxr = LWUSB_GET_EPR(i);
 		/* Disable Endpoints */
 		*(epxr) = 0u ;
 	}
-
 	return ERR_OK ;
 }
 
 
-err_t lwUSB_hwMemoryReset( void ){
+err_t hwMemoryReset( void ){
 
 	USB_pmaInit();
 	return ERR_OK ;
 }
 
-
-err_t lwUSB_hwEnable( void ){
+err_t hwEnable( void ){
 
 	USB->DADDR |= (USB_DADDR_EF_Msk);
 	return ERR_OK ;
 }
 
-err_t lwUSB_hwDisable ( void ){
+err_t hwDisable ( void ){
 
 	USB->DADDR &= ~(USB_DADDR_EF_Msk);
 	return ERR_OK ;
 }
 
-
-
-err_t lwUSB_hwSetAddress( uint8_t Address ){
+err_t hwSetAddress( uint8_t Address ){
 
 	USB->DADDR &= ~ ( USB_DADDR_ADD_Msk );
 	USB->DADDR |= ( Address << USB_DADDR_ADD_Pos );
 	return ERR_OK ;
 }
 
-int32_t lwUSB_hwWriteData( uint8_t lwEPNum , uint8_t * lwData , uint16_t lwLen ){
+int32_t hwWriteData( uint8_t lwEPNum , uint8_t * lwData , uint16_t lwLen ){
 
 	int32_t status = USB_pmaWrite(lwEPNum, lwData , lwLen);
 	if ( status < 0 ){
@@ -175,8 +173,7 @@ int32_t lwUSB_hwWriteData( uint8_t lwEPNum , uint8_t * lwData , uint16_t lwLen )
 	return status;
 }
 
-
-int32_t lwUSB_hwReadData( uint8_t lwEPNum , uint8_t* lwData ){
+int32_t hwReadData( uint8_t lwEPNum , uint8_t* lwData ){
 
 	int32_t status = USB_pmaGetNumBytes( lwEPNum );
 	int32_t Length = status ;
@@ -187,48 +184,48 @@ int32_t lwUSB_hwReadData( uint8_t lwEPNum , uint8_t* lwData ){
 	return Length ;
 }
 
-int32_t  lwUSB_hwSetTXResponse ( uint8_t lwEPNum ,  uint8_t lwResp ){
+int32_t  hwSetTXResponse ( uint8_t lwEPNum ,  uint8_t lwResp ){
 	return LWUSB_WRITE_STAT_TX(LWUSB_GET_EPR(lwEPNum) , lwResp  );
 }
 
 
-int32_t  lwUSB_hwSetRXResponse ( uint8_t lwEPNum  ,  uint8_t lwResp ){
+int32_t  hwSetRXResponse ( uint8_t lwEPNum  ,  uint8_t lwResp ){
 	return LWUSB_WRITE_STAT_RX(LWUSB_GET_EPR(lwEPNum) , lwResp  );
 }
 
 
-int32_t  lwUSB_hwIsSetupFlag ( uint8_t lwEPNum  ){
+int32_t  hwIsSetupFlag ( uint8_t lwEPNum  ){
 	return LWUSB_READ_EPR(lwEPNum)&USB_EP0R_SETUP_Msk ;
 }
 
-int32_t  lwUSB_hwIsOUTFlag (  uint8_t lwEPNum  ){
+int32_t  hwIsOUTFlag (  uint8_t lwEPNum  ){
 	return LWUSB_READ_EPR(lwEPNum)&USB_EP0R_CTR_RX_Msk ;
 }
 
-int32_t  lwUSB_hwIsINFlag (  uint8_t lwEPNum  ) {
+int32_t  hwIsINFlag (  uint8_t lwEPNum  ) {
 	return LWUSB_READ_EPR(lwEPNum)&USB_EP0R_CTR_TX_Msk ;
 }
 
-void  lwUSB_hwClearINFlag(  uint8_t lwEPNum  ){
+void  hwClearINFlag(  uint8_t lwEPNum  ){
 	LWUSB_CLEAR_CTR_TX(LWUSB_GET_EPR(lwEPNum));
 }
 
-void  lwUSB_hwClearOUTFlag(  uint8_t lwEPNum  ){
+void  hwClearOUTFlag(  uint8_t lwEPNum  ){
 	LWUSB_CLEAR_CTR_RX(LWUSB_GET_EPR(lwEPNum));
 }
-void  lwUSB_hwClearSetupFlag(  uint8_t lwEPNum  ){
+void  hwClearSetupFlag(  uint8_t lwEPNum  ){
 	LWUSB_CLEAR_CTR_RX(LWUSB_GET_EPR(lwEPNum));
 }
 
-int32_t lwUSB_hwGetNumReceivedBytes ( uint8_t lwEPNum ){
+int32_t hwGetNumReceivedBytes ( uint8_t lwEPNum ){
 	return USB_pmaGetNumBytes( lwEPNum );
 }
 
-int32_t lwUSB_hwWriteNumTransmittedBytes ( uint8_t lwEPNum , uint32_t lwLen ){
+int32_t hwWriteNumTransmittedBytes ( uint8_t lwEPNum , uint32_t lwLen ){
 	return USB_pmaWriteNumBytes(lwEPNum ,lwLen);
 }
 
-int32_t lwUSB_hwConfigureEndPoint ( uint8_t lwEPNum , uint8_t lwEPAddr , uint8_t lwEPType , uint8_t lwEPDir ){
+int32_t hwConfigureEndPoint ( uint8_t lwEPNum , uint8_t lwEPAddr , uint8_t lwEPType , uint8_t lwEPDir ){
 
 	uint8_t EndPoint_Type_Translate[4u];
 
@@ -236,9 +233,6 @@ int32_t lwUSB_hwConfigureEndPoint ( uint8_t lwEPNum , uint8_t lwEPAddr , uint8_t
 	EndPoint_Type_Translate[e_lwUSB_EndPoint_Type_Bulk]        = 0u ;
 	EndPoint_Type_Translate[e_lwUSB_EndPoint_Type_Isochronous] = 2u ;
 	EndPoint_Type_Translate[e_lwUSB_EndPoint_Type_Interrupt]   = 3u ;
-
-
-
 
 	uint32_t * epxr = LWUSB_GET_EPR(lwEPNum);
 
@@ -250,7 +244,7 @@ int32_t lwUSB_hwConfigureEndPoint ( uint8_t lwEPNum , uint8_t lwEPAddr , uint8_t
 	return ERR_OK ;
 }
 
-void * lwUSB_hwAllocate( uint8_t lwEPNum , size_t lwSize , uint8_t lwEPType , uint8_t lwEPDirection ){
+void * hwAllocate( uint8_t lwEPNum , size_t lwSize , uint8_t lwEPType , uint8_t lwEPDirection ){
 
 	void* retval =  USB_pmaAllocate(lwEPNum, lwSize);
 
