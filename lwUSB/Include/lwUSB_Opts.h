@@ -9,18 +9,71 @@
 #define LWUSB_OPTS_H_
 
 #include "lwUSB_SPECS.h"
-
+#include "lwUSB_Std.h"
 
 /******************************************************* HW Specific Defines *************************************************************/
 /*****************************************************************************************************************************************/
 
-#define LWUSB_OPTS_NUM_HW_EPS 8u						/* Maximum Number of EP's That the Hardware Supports */
+#define LWUSB_OPTS_NUM_EPS     2     /* Number of EndPoints */
+#define LWUSB_OPTS_NUM_CONFIGS 1u    /* Number of Configurations */
+#define LWUSB_OPTS_NUM_INTFS   1u    /* Number of Interfaces */
 
-/****************************************************** Control EP Configuration *********************************************************/
-/*****************************************************************************************************************************************/
+#if LWUSB_OPTS_NUM_EPS > 0u
 
-#define LWUSB_OPTS_CONTROL_EP_TX_B_SIZE 64u				/* Control EP Transfer Buffer Size */
-#define LWUSB_OPTS_CONTROL_EP_RX_B_SIZE 32u				/* Control EP Receive  Buffer Size */
+#define LWUSB_OPTS_EP0_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
+#define LWUSB_OPTS_EP0_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
+
+#endif
+
+#if LWUSB_OPTS_NUM_EPS > 1u
+
+#define LWUSB_OPTS_EP1_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
+#define LWUSB_OPTS_EP1_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
+
+#endif
+
+#if LWUSB_OPTS_NUM_EPS > 2u
+
+#define LWUSB_OPTS_EP2_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
+#define LWUSB_OPTS_EP2_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
+
+#endif
+
+#if LWUSB_OPTS_NUM_EPS > 3u
+
+#define LWUSB_OPTS_EP3_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
+#define LWUSB_OPTS_EP3_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
+
+#endif
+
+#if LWUSB_OPTS_NUM_EPS > 4u
+
+#define LWUSB_OPTS_EP4_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
+#define LWUSB_OPTS_EP4_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
+
+#endif
+
+#if LWUSB_OPTS_NUM_EPS > 5u
+
+#define LWUSB_OPTS_EP5_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
+#define LWUSB_OPTS_EP5_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
+
+#endif
+
+#if LWUSB_OPTS_NUM_EPS > 6u
+
+#define LWUSB_OPTS_EP6_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
+#define LWUSB_OPTS_EP6_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
+
+#endif
+
+#if LWUSB_OPTS_NUM_EPS > 7u
+
+#define LWUSB_OPTS_EP7_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
+#define LWUSB_OPTS_EP7_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
+
+#endif
+
 
 /****************************************************** Stack Speicifc Defines ***********************************************************/
 /*****************************************************************************************************************************************/
@@ -68,8 +121,29 @@
 /*****************************************************************************************************************************************/
 
 
+#if LWUSB_OPTS_NUM_EPS < LWUSB_MIN_EP_N
+#error "S-C : P(LWUSB_OPTS_NUM_EPS) , Minimum of one EndPoint is needed !!"
+#endif
 
+#if LWUSB_OPTS_NUM_CONFIGS < LWUSB_MIN_CONFIG_N
+#error "S-C : P(LWUSB_OPTS_NUM_CONFIGS) , Minimum of one Configuration is needed !!"
+#endif
 
+#if LWUSB_OPTS_NUM_INTFS < LWUSB_MIN_INTF_N
+#error "S-C : P(LWUSB_OPTS_NUM_INTFS) , Minimum of one Interface is needed !!"
+#endif
+
+#if LWUSB_OPTS_NUM_EPS > LWUSB_MAX_EP_N
+#error "S-C : P(LWUSB_OPTS_NUM_EPS) , Unsupported Number of EndPoints !!"
+#endif
+
+#if LWUSB_OPTS_NUM_CONFIGS > LWUSB_MAX_CONFIG_N
+#error "S-C : P(LWUSB_OPTS_NUM_CONFIGS) , Unsupported Number of Configurations !!"
+#endif
+
+#if LWUSB_OPTS_NUM_INTFS > LWUSB_MAX_INTF_N
+#error "S-C : P(LWUSB_OPTS_NUM_INTFS) , Unsupported Number of Interfaces !!"
+#endif
 
 #define LWUSB_OPTS_
 

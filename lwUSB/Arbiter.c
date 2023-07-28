@@ -11,9 +11,11 @@
 #include "HAL/Hal.h"
 #include "Include/lwUSB_Debug.h"
 #include "BusHandlers.h"
+#include "Include/lwUSB_Opts.h"
 
 #define INTF_POOL_SZ 512u
 #define BUS_EVENTS_SZ 32u
+
 
 static uint8_t intf_pool_p[INTF_POOL_SZ];
 static struct DataPool_s intf_datapool ;
@@ -50,16 +52,10 @@ static void Arbiter_Main( void ){
     /* Events are Checked in the order of their Priority */
 	for ( uint32_t iD = lwUSB_BusEvent_e_Start + 1u  ; iD < lwUSB_BusEvent_e_End ; iD++  ){
 		struct Event_s * ev = getEventbyID(iD);
-		if ( Event_GetCount(ev)){
-			if ( ev->evHdl ){
-				Event_CallHandler(ev);
-			}
+		if ( Event_GetCount(ev) && ev->evHdl ){
+			Event_CallHandler(ev);
 			Event_Clear(ev);
 		}
 	}
-
-
-
-
-
+	return ;
 }
