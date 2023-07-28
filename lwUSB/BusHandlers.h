@@ -16,6 +16,7 @@
 static uint32_t resetHandler ( struct Event_s* ev ){
 
 	/* Call the Hardware Reset Handler */
+	HAL_handleEvent(lwUSB_BusEvent_e_SetAddress,0u);
 	HAL_handleEvent(lwUSB_BusEvent_e_RESET);
 	/* Call User Reset/ CallBacks */
 	DO_CB((void*)ev);

@@ -23,6 +23,24 @@
 #include "../lwUSB_Intf.h"
 #include <stdarg.h>
 
+/* Simplified USER Interface */
+WEAK void HAL_TxHandler(uint8_t epNum ,  uint8_t * dataPtr , uint16_t dataSz ){
+}
+
+WEAK void HAL_ResetHandler(void){
+}
+
+WEAK void HAL_ErrorHandler(void){
+}
+
+WEAK void HAL_SuspendHandler(void){
+}
+
+WEAK void HAL_SetAddress( uint8_t devAddr ){
+
+}
+
+
 void HAL_notifyEvent ( enum lwUSB_BusEvent_e event_e , ... ){
 
     va_list args;
@@ -103,6 +121,12 @@ void HAL_handleEvent ( enum lwUSB_BusEvent_e event_e , ... ){
     case lwUSB_BusEvent_e_SUSPEND :
     	HAL_SuspendHandler();
     	break;
+    case lwUSB_BusEvent_e_SetAddress :
+    {
+    	uint8_t devAddress = (uint8_t) va_arg(args, int);
+    	HAL_SetAddress(devAddress);
+    }
+    	break;
     default :
     	break;
     }
@@ -111,15 +135,4 @@ void HAL_handleEvent ( enum lwUSB_BusEvent_e event_e , ... ){
     return ;
 }
 
-/* Simplified USER Interface */
-WEAK void HAL_TxHandler(uint8_t epNum ,  uint8_t * dataPtr , uint16_t dataSz ){
-}
 
-WEAK void HAL_ResetHandler(void){
-}
-
-WEAK void HAL_ErrorHandler(void){
-}
-
-WEAK void HAL_SuspendHandler(void){
-}

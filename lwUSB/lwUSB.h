@@ -37,6 +37,7 @@ enum lwUSB_BusEvent_e {
 	lwUSB_BusEvent_e_SUSPEND,
 	lwUSB_BusEvent_e_RX,
 	lwUSB_BusEvent_e_TX,
+	lwUSB_BusEvent_e_SetAddress,
 	lwUSB_BusEvent_e_SETUP,
 	lwUSB_BusEvent_e_ERR,
 	lwUSB_BusEvent_e_WAKEUP,

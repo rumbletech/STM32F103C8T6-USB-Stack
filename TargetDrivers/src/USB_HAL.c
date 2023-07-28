@@ -6,6 +6,10 @@
 void HAL_ResetHandler(void){
 	hwRegisterReset();
 	hwMemoryReset();
-	hwSetAddress(0u);
 	hwEnable();
+	return;
+}
+void HAL_SetAddress( uint8_t devAddr ){
+	hwSetAddress(devAddr);
+	return;
 }
