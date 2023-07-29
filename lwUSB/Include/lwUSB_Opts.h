@@ -11,15 +11,23 @@
 #include "lwUSB_SPECS.h"
 #include "lwUSB_Std.h"
 
-/******************************************************* HW Specific Defines *************************************************************/
+/*****************************************************************************************************************************************/
 /*****************************************************************************************************************************************/
 
-#define LWUSB_OPTS_NUM_EPS     2     /* Number of EndPoints */
-#define LWUSB_OPTS_NUM_CONFIGS 1u    /* Number of Configurations */
-#define LWUSB_OPTS_NUM_INTFS   1u    /* Number of Interfaces */
+/******************************** Disable/Enable Sanity Checks *************/
+#define SANITY_CHECKS 1U
+/******************************** Number of EndPoints **********************/
+#define LWUSB_OPTS_NUM_EPS     2U
+/***************************** Number of Configurations ********************/
+#define LWUSB_OPTS_NUM_CONFIGS 1u
+/***************************** Number of Interfaces**** ********************/
+#define LWUSB_OPTS_NUM_INTFS   1u
+/*************** Buffer Memory Size from which to allocate *****************/
+#define LWUSB_BUFF_M_S         1024u + 512u
 
 #if LWUSB_OPTS_NUM_EPS > 0u
 
+/*************** Size of TX / RX Buffer for this EndPoint ******************/
 #define LWUSB_OPTS_EP0_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
 #define LWUSB_OPTS_EP0_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
 
@@ -27,6 +35,7 @@
 
 #if LWUSB_OPTS_NUM_EPS > 1u
 
+/*************** Size of TX / RX Buffer for this EndPoint ******************/
 #define LWUSB_OPTS_EP1_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
 #define LWUSB_OPTS_EP1_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
 
@@ -34,6 +43,7 @@
 
 #if LWUSB_OPTS_NUM_EPS > 2u
 
+/*************** Size of TX / RX Buffer for this EndPoint ******************/
 #define LWUSB_OPTS_EP2_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
 #define LWUSB_OPTS_EP2_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
 
@@ -41,6 +51,7 @@
 
 #if LWUSB_OPTS_NUM_EPS > 3u
 
+/*************** Size of TX / RX Buffer for this EndPoint ******************/
 #define LWUSB_OPTS_EP3_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
 #define LWUSB_OPTS_EP3_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
 
@@ -48,6 +59,7 @@
 
 #if LWUSB_OPTS_NUM_EPS > 4u
 
+/*************** Size of TX / RX Buffer for this EndPoint ******************/
 #define LWUSB_OPTS_EP4_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
 #define LWUSB_OPTS_EP4_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
 
@@ -55,6 +67,7 @@
 
 #if LWUSB_OPTS_NUM_EPS > 5u
 
+/*************** Size of TX / RX Buffer for this EndPoint ******************/
 #define LWUSB_OPTS_EP5_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
 #define LWUSB_OPTS_EP5_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
 
@@ -62,6 +75,7 @@
 
 #if LWUSB_OPTS_NUM_EPS > 6u
 
+/*************** Size of TX / RX Buffer for this EndPoint ******************/
 #define LWUSB_OPTS_EP6_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
 #define LWUSB_OPTS_EP6_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
 
@@ -69,6 +83,7 @@
 
 #if LWUSB_OPTS_NUM_EPS > 7u
 
+/*************** Size of TX / RX Buffer for this EndPoint ******************/
 #define LWUSB_OPTS_EP7_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
 #define LWUSB_OPTS_EP7_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
 
@@ -121,27 +136,97 @@
 /*****************************************************************************************************************************************/
 
 
-#if LWUSB_OPTS_NUM_EPS < LWUSB_MIN_EP_N
+#if LWUSB_OPTS_NUM_EPS > 7u
+
+#define BMS_LEAST  LWUSB_OPTS_EP0_TX_B_SIZE + LWUSB_OPTS_EP0_RX_B_SIZE + 2*BM_BS + \
+	               LWUSB_OPTS_EP1_TX_B_SIZE + LWUSB_OPTS_EP1_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP2_TX_B_SIZE + LWUSB_OPTS_EP2_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP3_TX_B_SIZE + LWUSB_OPTS_EP3_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP4_TX_B_SIZE + LWUSB_OPTS_EP4_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP5_TX_B_SIZE + LWUSB_OPTS_EP5_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP6_TX_B_SIZE + LWUSB_OPTS_EP6_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP7_TX_B_SIZE + LWUSB_OPTS_EP7_RX_B_SIZE + 2*BM_BS \
+
+
+#elif LWUSB_OPTS_NUM_EPS > 6u
+
+#define BMS_LEAST  LWUSB_OPTS_EP0_TX_B_SIZE + LWUSB_OPTS_EP0_RX_B_SIZE + 2*BM_BS + \
+	               LWUSB_OPTS_EP1_TX_B_SIZE + LWUSB_OPTS_EP1_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP2_TX_B_SIZE + LWUSB_OPTS_EP2_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP3_TX_B_SIZE + LWUSB_OPTS_EP3_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP4_TX_B_SIZE + LWUSB_OPTS_EP4_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP5_TX_B_SIZE + LWUSB_OPTS_EP5_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP6_TX_B_SIZE + LWUSB_OPTS_EP6_RX_B_SIZE + 2*BM_BS \
+
+#elif LWUSB_OPTS_NUM_EPS > 5u
+
+#define BMS_LEAST  LWUSB_OPTS_EP0_TX_B_SIZE + LWUSB_OPTS_EP0_RX_B_SIZE + 2*BM_BS + \
+	               LWUSB_OPTS_EP1_TX_B_SIZE + LWUSB_OPTS_EP1_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP2_TX_B_SIZE + LWUSB_OPTS_EP2_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP3_TX_B_SIZE + LWUSB_OPTS_EP3_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP4_TX_B_SIZE + LWUSB_OPTS_EP4_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP5_TX_B_SIZE + LWUSB_OPTS_EP5_RX_B_SIZE + 2*BM_BS \
+
+#elif LWUSB_OPTS_NUM_EPS > 4u
+
+#define BMS_LEAST  LWUSB_OPTS_EP0_TX_B_SIZE + LWUSB_OPTS_EP0_RX_B_SIZE + 2*BM_BS + \
+	               LWUSB_OPTS_EP1_TX_B_SIZE + LWUSB_OPTS_EP1_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP2_TX_B_SIZE + LWUSB_OPTS_EP2_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP3_TX_B_SIZE + LWUSB_OPTS_EP3_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP4_TX_B_SIZE + LWUSB_OPTS_EP4_RX_B_SIZE + 2*BM_BS \
+
+
+#elif LWUSB_OPTS_NUM_EPS > 3u
+
+#define BMS_LEAST  LWUSB_OPTS_EP0_TX_B_SIZE + LWUSB_OPTS_EP0_RX_B_SIZE + 2*BM_BS + \
+	               LWUSB_OPTS_EP1_TX_B_SIZE + LWUSB_OPTS_EP1_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP2_TX_B_SIZE + LWUSB_OPTS_EP2_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP3_TX_B_SIZE + LWUSB_OPTS_EP3_RX_B_SIZE + 2*BM_BS \
+
+
+#elif LWUSB_OPTS_NUM_EPS > 2u
+
+#define BMS_LEAST  LWUSB_OPTS_EP0_TX_B_SIZE + LWUSB_OPTS_EP0_RX_B_SIZE + 2*BM_BS + \
+	               LWUSB_OPTS_EP1_TX_B_SIZE + LWUSB_OPTS_EP1_RX_B_SIZE + 2*BM_BS + \
+				   LWUSB_OPTS_EP2_TX_B_SIZE + LWUSB_OPTS_EP2_RX_B_SIZE + 2*BM_BS \
+
+
+#elif LWUSB_OPTS_NUM_EPS > 1u
+
+#define BMS_LEAST  LWUSB_OPTS_EP0_TX_B_SIZE + LWUSB_OPTS_EP0_RX_B_SIZE + 2*BM_BS + \
+	               LWUSB_OPTS_EP1_TX_B_SIZE + LWUSB_OPTS_EP1_RX_B_SIZE + 2*BM_BS \
+
+#elif LWUSB_OPTS_NUM_EPS > 0u
+
+#define BMS_LEAST  LWUSB_OPTS_EP0_TX_B_SIZE + LWUSB_OPTS_EP0_RX_B_SIZE + 2*BM_BS \
+
+#endif
+
+#if ( LWUSB_BUFF_M_S < BMS_LEAST ) && ( SANITY_CHECKS != 0u )
+#error "S-C : P(LWUSB_BUFF_M_S) , BufferSize is less than needed for buffer Allocation !!"
+#endif
+
+#if LWUSB_OPTS_NUM_EPS < LWUSB_MIN_EP_N  && ( SANITY_CHECKS != 0u )
 #error "S-C : P(LWUSB_OPTS_NUM_EPS) , Minimum of one EndPoint is needed !!"
 #endif
 
-#if LWUSB_OPTS_NUM_CONFIGS < LWUSB_MIN_CONFIG_N
+#if LWUSB_OPTS_NUM_CONFIGS < LWUSB_MIN_CONFIG_N  && ( SANITY_CHECKS != 0u )
 #error "S-C : P(LWUSB_OPTS_NUM_CONFIGS) , Minimum of one Configuration is needed !!"
 #endif
 
-#if LWUSB_OPTS_NUM_INTFS < LWUSB_MIN_INTF_N
+#if LWUSB_OPTS_NUM_INTFS < LWUSB_MIN_INTF_N  && ( SANITY_CHECKS != 0u )
 #error "S-C : P(LWUSB_OPTS_NUM_INTFS) , Minimum of one Interface is needed !!"
 #endif
 
-#if LWUSB_OPTS_NUM_EPS > LWUSB_MAX_EP_N
+#if LWUSB_OPTS_NUM_EPS > LWUSB_MAX_EP_N  && ( SANITY_CHECKS != 0u )
 #error "S-C : P(LWUSB_OPTS_NUM_EPS) , Unsupported Number of EndPoints !!"
 #endif
 
-#if LWUSB_OPTS_NUM_CONFIGS > LWUSB_MAX_CONFIG_N
+#if LWUSB_OPTS_NUM_CONFIGS > LWUSB_MAX_CONFIG_N  && ( SANITY_CHECKS != 0u )
 #error "S-C : P(LWUSB_OPTS_NUM_CONFIGS) , Unsupported Number of Configurations !!"
 #endif
 
-#if LWUSB_OPTS_NUM_INTFS > LWUSB_MAX_INTF_N
+#if LWUSB_OPTS_NUM_INTFS > LWUSB_MAX_INTF_N  && ( SANITY_CHECKS != 0u )
 #error "S-C : P(LWUSB_OPTS_NUM_INTFS) , Unsupported Number of Interfaces !!"
 #endif
 

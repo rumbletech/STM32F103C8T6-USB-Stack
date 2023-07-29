@@ -25,6 +25,7 @@
 /* Default Values */
 #define LWUSB_DEFAULT_EP_TX_BS 256u
 #define LWUSB_DEFAULT_EP_RX_BS 256u
+#define BM_BS 4u
 
 #define LWUSB_ENUM_TYPE_S 32u
 #define LWUSB_BUS_EVENTS_S 0u
