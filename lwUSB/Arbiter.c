@@ -30,9 +30,12 @@ static void EventErrorHandler ( struct Event_s * ev ){
 	LW_PRINTF("!EV:%d , C:%d\r\n" , ev->evID , ev->evCount);
 	return;
 }
+
+/* this function must be called , before any other call to the stack. */
 void Arbiter_Init ( void ){
 
-	/* Initialize Buffer Memory */
+	/* Initialize the memory controller , this allows static allocation
+	 * for physical endpoints , descriptors and control structures */
 	memctrl_init();
 	/* Init Interface Pool */
 	DataPool_Init(&intf_datapool, &intf_pool_p[0ul], sizeof(intf_pool_p));

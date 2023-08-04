@@ -34,4 +34,9 @@
 
 #define WEAK __attribute__((weak))
 
+typedef struct ll_s {
+	void * content;
+	void * next ;
+};
+
 #endif /* LWUSB_STD_H_ */

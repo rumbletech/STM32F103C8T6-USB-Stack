@@ -725,22 +725,21 @@ uint32_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * EndPoint ){
 
 }
 
-struct lwUSB_endpoint_s * lwUSB_CreateEndpoint( uint16_t maxPacketSize  , uint8_t epType , uint8_t epDir  , uint16_t pollTms ) {
+struct lwUSB_endpoint_s * lwUSB_CreateEndpoint( uint16_t maxPacketSize  , enum e_lwUSB_EndPoint_Type epType , enum e_lwUSB_EndPoint_Direction epDir  , uint16_t pollTms ) {
 
-	if ( epType > LWUSB_EP_TYPE_MAX || epDir > LWUSB_EP_DIRECTION_MAX ){
-		return NULL ;
+	if ( epType > e_lwUSB_EndPoint_Type_MAX ){
+		return NULL;
 	}
-
-	if ( !pollTms || ( epType == e_lwUSB_EndPoint_Type_Isochronous && pollTms > LWUSB_ISOCHRONOUS_MAX_PERIOD_MS ) ||
-					 ( epType != e_lwUSB_EndPoint_Type_Isochronous && pollTms > LWUSB_ENDPOINT_MAX_PERIOD_MS )){
-		return NULL ;
+	if ( epDir > e_lwUSB_EndPoint_Direction_MAX ){
+		return NULL;
 	}
-
-	if ( epType == e_lwUSB_EndPoint_Type_Isochronous ){
-		while ( pollTms > 16u ){
-			pollTms >>= 1u ;
+	if ( epType  == e_lwUSB_EndPoint_Type_Isochronous ||
+		 epType  == e_lwUSB_EndPoint_Type_Interrupt ){
+		if ( !pollTms ){
+			return NULL;
 		}
 	}
+
 
 	struct lwUSB_endpoint_s * endpoint = (struct lwUSB_endpoint_s * )malloc(sizeof(struct lwUSB_endpoint_s ));
 	if ( !endpoint ){
