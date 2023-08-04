@@ -16,82 +16,10 @@
 
 /******************************** Disable/Enable Sanity Checks *************/
 #define SANITY_CHECKS 1U
-/******************************** Number of EndPoints **********************/
-#define LWUSB_OPTS_NUM_EPS     2U
-/***************************** Number of Configurations ********************/
-#define LWUSB_OPTS_NUM_CONFIGS 1u
-/***************************** Number of Interfaces**** ********************/
-#define LWUSB_OPTS_NUM_INTFS   1u
 /*************** Buffer Memory Size from which to allocate *****************/
 #define LWUSB_BUFF_M_S         1024u + 512u
 #define LWUSB_DESCRIPTOR_M_S   256u
 #define LWUSB_STACK_M_S        512u
-
-#if LWUSB_OPTS_NUM_EPS > 0u
-
-/*************** Size of TX / RX Buffer for this EndPoint ******************/
-#define LWUSB_OPTS_EP0_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
-#define LWUSB_OPTS_EP0_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
-
-#endif
-
-#if LWUSB_OPTS_NUM_EPS > 1u
-
-/*************** Size of TX / RX Buffer for this EndPoint ******************/
-#define LWUSB_OPTS_EP1_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
-#define LWUSB_OPTS_EP1_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
-#define LWUSB_OPTS_EP1_TYPE
-#define LWUSB_OPTS_EP1
-
-#endif
-
-#if LWUSB_OPTS_NUM_EPS > 2u
-
-/*************** Size of TX / RX Buffer for this EndPoint ******************/
-#define LWUSB_OPTS_EP2_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
-#define LWUSB_OPTS_EP2_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
-
-#endif
-
-#if LWUSB_OPTS_NUM_EPS > 3u
-
-/*************** Size of TX / RX Buffer for this EndPoint ******************/
-#define LWUSB_OPTS_EP3_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
-#define LWUSB_OPTS_EP3_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
-
-#endif
-
-#if LWUSB_OPTS_NUM_EPS > 4u
-
-/*************** Size of TX / RX Buffer for this EndPoint ******************/
-#define LWUSB_OPTS_EP4_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
-#define LWUSB_OPTS_EP4_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
-
-#endif
-
-#if LWUSB_OPTS_NUM_EPS > 5u
-
-/*************** Size of TX / RX Buffer for this EndPoint ******************/
-#define LWUSB_OPTS_EP5_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
-#define LWUSB_OPTS_EP5_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
-
-#endif
-
-#if LWUSB_OPTS_NUM_EPS > 6u
-
-/*************** Size of TX / RX Buffer for this EndPoint ******************/
-#define LWUSB_OPTS_EP6_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
-#define LWUSB_OPTS_EP6_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
-
-#endif
-
-#if LWUSB_OPTS_NUM_EPS > 7u
-
-/*************** Size of TX / RX Buffer for this EndPoint ******************/
-#define LWUSB_OPTS_EP7_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
-#define LWUSB_OPTS_EP7_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
-
-#endif
 
 
 /****************************************************** Stack Speicifc Defines ***********************************************************/
