@@ -12,13 +12,14 @@
 #include "Include/lwUSB_Debug.h"
 #include "BusHandlers.h"
 #include "Include/lwUSB_Opts.h"
+#include "memctrl.h"
 
 #define INTF_POOL_SZ 512u
 #define BUS_EVENTS_SZ 32u
 
-
 static uint8_t intf_pool_p[INTF_POOL_SZ];
 static struct DataPool_s intf_datapool ;
+static struct mem_s buffm;_
 static struct Event_s BusEvents[lwUSB_BusEvent_e_End-lwUSB_BusEvent_e_Start-1u];
 static uint32_t (*busHandlers[lwUSB_BusEvent_e_End-lwUSB_BusEvent_e_Start-1u])(struct Event_s * ev ) = {
 LWUSB_BUS_HANDLERS
@@ -31,6 +32,9 @@ static void EventErrorHandler ( struct Event_s * ev ){
 }
 void Arbiter_Init ( void ){
 
+	/* Initialize Buffer Memory */
+	memctrl_init();
+	/* Init Interface Pool */
 	DataPool_Init(&intf_datapool, &intf_pool_p[0ul], sizeof(intf_pool_p));
 	/* Init Interface */
 	lwUSB_Intf_Init(&intf_datapool);
@@ -38,6 +42,7 @@ void Arbiter_Init ( void ){
 	for ( uint32_t iD = lwUSB_BusEvent_e_Start + 1u , j = 0u ; iD < lwUSB_BusEvent_e_End ; iD++ , j++ ){
 		Event_Init(&BusEvents[j], iD , busHandlers[j] ,  NULL, EventErrorHandler, UINT32_MAX);
 	}
+
 	return ;
 }
 

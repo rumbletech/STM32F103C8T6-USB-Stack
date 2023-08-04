@@ -10,8 +10,6 @@
 #include "mem.h"
 #include "Include/lwUSB_Opts.h"
 
-static uint8_t  buffm[LWUSB_BUFF_M_S];
-
 void mem_init( struct mem_s * mem_p , uint8_t * bp , uint32_t bs ){
 
 	mem_p->mp = bp ;

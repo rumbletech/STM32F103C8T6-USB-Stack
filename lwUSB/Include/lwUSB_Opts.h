@@ -24,6 +24,8 @@
 #define LWUSB_OPTS_NUM_INTFS   1u
 /*************** Buffer Memory Size from which to allocate *****************/
 #define LWUSB_BUFF_M_S         1024u + 512u
+#define LWUSB_DESCRIPTOR_M_S   256u
+#define LWUSB_STACK_M_S        512u
 
 #if LWUSB_OPTS_NUM_EPS > 0u
 
@@ -38,6 +40,8 @@
 /*************** Size of TX / RX Buffer for this EndPoint ******************/
 #define LWUSB_OPTS_EP1_TX_B_SIZE LWUSB_DEFAULT_EP_TX_BS
 #define LWUSB_OPTS_EP1_RX_B_SIZE LWUSB_DEFAULT_EP_RX_BS
+#define LWUSB_OPTS_EP1_TYPE
+#define LWUSB_OPTS_EP1
 
 #endif
 
