@@ -832,7 +832,11 @@ void * lwUSB_CreateEndpoint( void * phyHandle , uint8_t epAddress , enum e_lwUSB
 	return (void*)ep ;
 }
 
-struct lwUSB_interface_s * lwUSB_CreateInterface ( uint8_t * IString ) {
+//returns a string handle
+void * lwUSB_CreateString( char * stringContent ){
+
+}
+void * lwUSB_CreateInterface ( uint8_t * IString ) {
 
 	struct lwUSB_interface_s * interface = (struct lwUSB_interface_s * )malloc(sizeof(struct lwUSB_interface_s ));
 	if ( !interface ){
@@ -844,14 +848,14 @@ struct lwUSB_interface_s * lwUSB_CreateInterface ( uint8_t * IString ) {
 		return NULL ;
 	}
 
-	uint8_t StringIndex = 0u  ;
-	if ( IString ){
-		StringIndex = lwUSB_controller.nextStringIndex++ ;
-		interface->string = LWUSB_REGISTER_STRING_UTF16( StringIndex , IString );
-		if ( !interface->string ){
-			LW_DEBUG("String NULL for lwUSB_CreateInterface with S= %s \r\n" , IString );
-		}
-	}
+//	uint8_t StringIndex = 0u  ;
+//	if ( IString ){
+//		StringIndex = lwUSB_controller.nextStringIndex++ ;
+//		interface->string = LWUSB_REGISTER_STRING_UTF16( StringIndex , IString );
+//		if ( !interface->string ){
+//			LW_DEBUG("String NULL for lwUSB_CreateInterface with S= %s \r\n" , IString );
+//		}
+//	}
 
 	d_interface->bLength            = 9u ;
 	d_interface->bDescriptorType    = e_lwUSB_bdescriptor_type_interface ;
