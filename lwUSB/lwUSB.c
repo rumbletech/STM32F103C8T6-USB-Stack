@@ -767,7 +767,17 @@ void * lwUSB_CreatePhysicalEndPoint( uint8_t epNum , uint32_t BufferSz , boolean
 
 	return (void*)phy;
 }
-struct lwUSB_endpoint_s * lwUSB_CreateEndpoint( uint16_t maxPacketSize  , enum e_lwUSB_EndPoint_Type epType , enum e_lwUSB_EndPoint_Direction epDir  , uint16_t pollTms ) {
+
+/* This Function Creates a Virtual EndPoint based on a Physical One
+ * phyHandle , handle to physical EndPoint , that the virtual EP will use.
+ * epAddress , Address of the EndPoint within the Interface ( 0u -> 15u ).
+ * epType , Type of EndPoint.
+ * epDir , Direction of the EndPoint.
+ * maxPacketSize , Adverised maxPacketSize for the EP, HW Must be Able to Handle this.
+ * pollTms , Polling Interval in ms in case of interrupt and IsoChronous Eps.
+ * returns a handle to the EndPoint.
+ */
+void * lwUSB_CreateEndpoint( void * phyHandle , uint8_t epAddress , enum e_lwUSB_EndPoint_Type epType , enum e_lwUSB_EndPoint_Direction epDir  , uint16_t maxPacketSize , uint16_t pollTms ) {
 
 	if ( epType > e_lwUSB_EndPoint_Type_MAX ){
 		return NULL;
@@ -781,33 +791,45 @@ struct lwUSB_endpoint_s * lwUSB_CreateEndpoint( uint16_t maxPacketSize  , enum e
 			return NULL;
 		}
 	}
-
-
-	struct lwUSB_endpoint_s * endpoint = (struct lwUSB_endpoint_s * )malloc(sizeof(struct lwUSB_endpoint_s ));
-	if ( !endpoint ){
-		return NULL ;
-	}
-	struct lwUSB_endpoint_descriptor_s * d_endpoint = (struct lwUSB_endpoint_descriptor_s* )malloc(sizeof(struct lwUSB_endpoint_descriptor_s));
-	if ( !d_endpoint ){
-		free(endpoint);
-		return NULL ;
+	/* Address Allowed Within a Single Interface is 0 -> 15 */
+	if ( epAddress > 15u ){
+		return NULL;
 	}
 
+	if ( !phyHandle ){
+		return NULL;
+	}
 
-	d_endpoint->bLength = 7u ;
-	d_endpoint->bDescriptorType = e_lwUSB_bdescriptor_type_endpoint ;
-	d_endpoint->bInterval =  pollTms ;
-	d_endpoint->Direction = epDir ;
-	d_endpoint->bEndpointAddress = 0u ;
-	d_endpoint->MaxPacketSize = maxPacketSize ;
-	d_endpoint->Transfer_Type = epType ;
-	d_endpoint->Additional_Transactions_PerMicroFrame = 0u ;
+	uint32_t tvs = sizeof(struct lwUSB_EndPoint_s) + sizeof( struct lwUSB_endpoint_descriptor_s);
+
+	if ( VAR_PEEK(tvs)  == FALSE ){
+		return NULL;
+	}
+
+	struct lwUSB_EndPoint_s * ep = (struct lwUSB_endpoint_s * )VAR_ALLOC(sizeof(struct lwUSB_EndPoint_s ));
+	struct lwUSB_endpoint_descriptor_s epd = (struct lwUSB_endpoint_descriptor_s*)DESC_ALLOC(sizeof(struct lwUSB_endpoint_descriptor_s));
+
+    /* Init Descriptor */
+	epd->bLength = 7u ;
+	epd->bDescriptorType = e_lwUSB_bdescriptor_type_endpoint ;
+	epd->bInterval =  pollTms ;
+	epd->Direction = epDir ;
+	epd->Endpoint_number = epAddress ;
+	epd->reserved1 = 0;
+	epd->reserved2 = 0;
+	epd->MaxPacketSize = maxPacketSize ;
+	epd->Transfer_Type = epType ;
+	epd->Additional_Transactions_PerMicroFrame = 0u ;
 	/* Note Synchronization in case of Isochronous Endpoints are hardcoded to No Synchronization and Usage to Data Endpoint */
-	d_endpoint->Synchronization_Type = 0u ;
-	d_endpoint->Usage_Type = 0u ;
+	epd->Synchronization_Type = 0u ;
+	epd->Usage_Type = 0u ;
 
-	endpoint->d_endpoint = d_endpoint ;
-	return endpoint ;
+	/* Init EndPoint */
+	ep->ep_d = epd;
+	ep->ep_phy = (struct lwUSB_PhyEndPoint_s *) phyHandle;
+	ep->p_itf = NULL;
+
+	return (void*)ep ;
 }
 
 struct lwUSB_interface_s * lwUSB_CreateInterface ( uint8_t * IString ) {
