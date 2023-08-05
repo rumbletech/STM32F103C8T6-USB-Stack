@@ -724,7 +724,49 @@ uint32_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * EndPoint ){
 	return ERR_OK ;
 
 }
+/* this Function Creates a Physical EndPoint ,
+ * Physical EndPoint Describe a Hardware EndPoint Supported By HAL , Link to HAL is through epNum.
+ * epNum , EndPoint Number as Understood by underlying Hardware.
+ * BufferSz , size of allocated buffer for this endpoint.
+ * isDouble , flags this endpoint as a possible Control EndPoint , so two buffers are allocated one for rx and one for tx.
+ * This Function Returns a handle to this physical EndPoint.
+ */
+void * lwUSB_CreatePhysicalEndPoint( uint8_t epNum , uint32_t BufferSz , boolean isDouble ){
+	/* We Shall not assert epNum */
+	if ( !BufferSz ){
+		return NULL;
+	}
 
+	uint32_t tbs =  (1u+isDouble)*BufferSz;
+	uint32_t tvs = sizeof(struct lwUSB_PhyEndPoint_s) + (1u+isDouble)*(sizeof(struct DataPool_s));
+
+	if ( VAR_PEEK(tvs)  == FALSE  ||
+		 BUFF_PEEK(tbs) == FALSE ){
+		return NULL;
+	}
+
+	struct lwUSB_PhyEndPoint_s * phy = NULL;
+	struct DataPool_s * dp0 = NULL;
+	struct DataPool_s * dp1 = NULL;
+	uint8_t* b0 = NULL;
+	uint8_t* b1 = NULL;
+
+	phy = (struct lwUSB_PhyEndPoint_s *)VAR_ALLOC(sizeof(struct lwUSB_PhyEndPoint_s));
+	dp0 = (struct DataPool_s *)VAR_ALLOC(sizeof(DataPool_s));
+	b0 = (uint8_t*) BUFF_ALLOC(BufferSz);
+	DataPool_Init(dp0, b0, BufferSz);
+	if ( isDouble ){
+		dp1 = (struct DataPool_s *)VAR_ALLOC(sizeof(DataPool_s));
+		b1 = (uint8_t*) BUFF_ALLOC(BufferSz);
+		DataPool_Init(dp1, b1, BufferSz);
+	}
+	phy->dp = dp0;
+	phy->dp_r = dp1;
+	phy->ep_n = epNum;
+	phy->isd = isDouble;
+
+	return (void*)phy;
+}
 struct lwUSB_endpoint_s * lwUSB_CreateEndpoint( uint16_t maxPacketSize  , enum e_lwUSB_EndPoint_Type epType , enum e_lwUSB_EndPoint_Direction epDir  , uint16_t pollTms ) {
 
 	if ( epType > e_lwUSB_EndPoint_Type_MAX ){

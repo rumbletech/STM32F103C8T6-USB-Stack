@@ -75,6 +75,7 @@ struct lwUSB_string_s {
 struct lwUSB_PhyEndPoint_s {
 
 	uint8_t ep_n;              /* This is the link between Hardware EndPoint and a FW EndPoint */
+	BOOL isd;
     struct DataPool_s * dp;    /* Handle to the Internal Allocated Memory for the EndPoint */
     struct DataPool_s * dp_r;  /* another Handle in case of INOUT EndPoints */
 

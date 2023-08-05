@@ -8,7 +8,15 @@
 #ifndef MEMCTRL_H_
 #define MEMCTRL_H_
 
-#include "stdint.h"
+#include "Include/lwUSB_Std.h"
+
+#define VAR_ALLOC(L)    (memctrl_alloc(L,e_mem_type_var_mem))
+#define BUFF_ALLOC(L)   (memctrl_alloc(L,e_mem_type_buffer_mem))
+#define DESC_ALLOC(L)   (memctrl_alloc(L,e_mem_type_discriptor_mem))
+
+#define VAR_PEEK(L)    (memctrl_peek(L,e_mem_type_var_mem))
+#define BUFF_PEEK(L)   (memctrl_peek(L,e_mem_type_buffer_mem))
+#define DESC_PEEK(L)   (memctrl_peek(L,e_mem_type_discriptor_mem))
 
 typedef enum e_mem_type {
 
@@ -19,5 +27,6 @@ typedef enum e_mem_type {
 };
 void memctrl_init ( void );
 void * memctrl_alloc( uint32_t bSize  , enum e_mem_type mt );
+BOOL memctrl_peek( uint32_t bSize , enum e_mem_type mt );
 
 #endif /* MEMCTRL_H_ */

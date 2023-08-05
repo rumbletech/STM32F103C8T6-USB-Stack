@@ -34,6 +34,11 @@
 
 #define WEAK __attribute__((weak))
 
+typedef uint8_t boolean;
+#define BOOL boolean;
+#define TRUE 1u
+#define FALSE 0u
+
 typedef struct ll_s {
 	void * content;
 	void * next ;

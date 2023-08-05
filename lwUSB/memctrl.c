@@ -8,8 +8,8 @@
  */
 
 #include "memctrl.h"
-#include "Include/lwUSB_Opts.h"
 #include "mem.h"
+#include "Include/lwUSB_Opts.h"
 
 static uint8_t m_bu8[LWUSB_BUFF_M_S];
 static uint8_t m_du8[LWUSB_DESCRIPTOR_M_S];
@@ -46,4 +46,25 @@ void * memctrl_alloc( uint32_t bSize  , enum e_mem_type mt ){
 		return NULL;
 	}
 	return mem_alloc(msrc , bSize);
+}
+
+BOOL memctrl_peek( uint32_t bSize , enum e_mem_type mt ){
+
+	struct mem_s * msrc = NULL ;
+
+	switch ( mt ){
+	case e_mem_type_buffer_mem :
+		msrc = &bm;
+		break;
+	case e_mem_type_discriptor_mem :
+		msrc = &dm;
+		break;
+	case e_mem_type_var_mem :
+		msrc = &sm;
+		break;
+	default:
+		return NULL;
+	}
+	return mem_peek(msrc , bSize);
+
 }
