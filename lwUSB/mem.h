@@ -19,7 +19,7 @@ typedef struct mem_s {
 } mem , *mem_p;
 
 void mem_init( struct mem_s * mem_p , uint8_t * bp , uint32_t bs );
-BOOL mem_peek( struct mem_s * mem_p , uint32 peek_sz );
+BOOL mem_peek( struct mem_s * mem_p , uint32_t peek_sz );
 uint8_t * mem_alloc( struct mem_s * mem_p , uint32_t alloc_sz );
 
 #endif /* MEM_H_ */

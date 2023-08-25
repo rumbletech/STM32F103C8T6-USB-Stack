@@ -18,8 +18,7 @@
 #define BUS_EVENTS_SZ 32u
 
 static uint8_t intf_pool_p[INTF_POOL_SZ];
-static struct DataPool_s intf_datapool ;
-static struct mem_s buffm;_
+static struct DataPool_s intf_datapool;
 static struct Event_s BusEvents[lwUSB_BusEvent_e_End-lwUSB_BusEvent_e_Start-1u];
 static uint32_t (*busHandlers[lwUSB_BusEvent_e_End-lwUSB_BusEvent_e_Start-1u])(struct Event_s * ev ) = {
 LWUSB_BUS_HANDLERS

@@ -8,7 +8,6 @@
 #ifndef LWUSB_OPTS_H_
 #define LWUSB_OPTS_H_
 
-#include "lwUSB_SPECS.h"
 #include "lwUSB_Std.h"
 
 /*****************************************************************************************************************************************/
@@ -37,7 +36,7 @@
 #define LWUSB_OPTS_BCD_VERSION          0x4003          /* Version of the Device , in binary coded decimal */
 #define LWUSB_OPTS_VENDOR_CODE          0x32			/* Vendor Code in Microsoft Windows Registry */
 
-#define LWUSB_OPTS_LANGID               LANGID_ENGLISH,LANGID_ENGLISH 	/* Array of Supported LANGID */
+#define LWUSB_OPTS_LANGID               USB_LANGID_ENGLISH,USB_LANGID_ENGLISH 	/* Array of Supported LANGID */
 
 
 #define LWUSB_OPTS_SERIAL_NUMBER_STRINGD_EN 0x1

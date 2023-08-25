@@ -1,9 +1,9 @@
 #include "lwUSB.h"
-#include "Include/lwUSB_Descriptors.h"
-#include "Include/lwUSB_Opts.h"
 #include "Common.h"
-
+#include "Include/lwUSB_Opts.h"
 #include "Include/lwUSB_Debug.h"
+#include "Include/lwUSB_Std.h"
+#include "memctrl.h"
 
 #define LWUSB_GET_CONFIG_V_NUM(VALUE) (VALUE-LWUSB_OPTS_CONFIG_VALUE_START)
 #define LWUSB_STRLEN(STR) (strlen((char*)STR))
@@ -752,18 +752,17 @@ void * lwUSB_CreatePhysicalEndPoint( uint8_t epNum , uint32_t BufferSz , boolean
 	uint8_t* b1 = NULL;
 
 	phy = (struct lwUSB_PhyEndPoint_s *)VAR_ALLOC(sizeof(struct lwUSB_PhyEndPoint_s));
-	dp0 = (struct DataPool_s *)VAR_ALLOC(sizeof(DataPool_s));
+	dp0 = (struct DataPool_s *)VAR_ALLOC(sizeof(struct DataPool_s));
 	b0 = (uint8_t*) BUFF_ALLOC(BufferSz);
 	DataPool_Init(dp0, b0, BufferSz);
 	if ( isDouble ){
-		dp1 = (struct DataPool_s *)VAR_ALLOC(sizeof(DataPool_s));
+		dp1 = (struct DataPool_s *)VAR_ALLOC(sizeof(struct DataPool_s));
 		b1 = (uint8_t*) BUFF_ALLOC(BufferSz);
 		DataPool_Init(dp1, b1, BufferSz);
 	}
 	phy->dp = dp0;
 	phy->dp_r = dp1;
 	phy->ep_n = epNum;
-	phy->isd = isDouble;
 
 	return (void*)phy;
 }
@@ -777,7 +776,7 @@ void * lwUSB_CreatePhysicalEndPoint( uint8_t epNum , uint32_t BufferSz , boolean
  * pollTms , Polling Interval in ms in case of interrupt and IsoChronous Eps.
  * returns a handle to the EndPoint.
  */
-void * lwUSB_CreateEndpoint( void * phyHandle , uint8_t epAddress , enum e_lwUSB_EndPoint_Type epType , enum e_lwUSB_EndPoint_Direction epDir  , uint16_t maxPacketSize , uint16_t pollTms ) {
+void * lwUSB_CreateEndpoint( void * phyHandle , uint8_t epAddress ,  e_lwUSB_EndPoint_Type epType ,  e_lwUSB_EndPoint_Direction epDir , uint16_t maxPacketSize , uint16_t pollTms ) {
 
 	if ( epType > e_lwUSB_EndPoint_Type_MAX ){
 		return NULL;
@@ -802,12 +801,12 @@ void * lwUSB_CreateEndpoint( void * phyHandle , uint8_t epAddress , enum e_lwUSB
 
 	uint32_t tvs = sizeof(struct lwUSB_EndPoint_s) + sizeof( struct lwUSB_endpoint_descriptor_s);
 
-	if ( VAR_PEEK(tvs)  == FALSE ){
+	if ( VAR_PEEK(tvs) == FALSE ){
 		return NULL;
 	}
 
-	struct lwUSB_EndPoint_s * ep = (struct lwUSB_endpoint_s * )VAR_ALLOC(sizeof(struct lwUSB_EndPoint_s ));
-	struct lwUSB_endpoint_descriptor_s epd = (struct lwUSB_endpoint_descriptor_s*)DESC_ALLOC(sizeof(struct lwUSB_endpoint_descriptor_s));
+	struct lwUSB_EndPoint_s * ep = (struct lwUSB_EndPoint_s * )VAR_ALLOC(sizeof(struct lwUSB_EndPoint_s ));
+	struct lwUSB_endpoint_descriptor_s * epd = (struct lwUSB_endpoint_descriptor_s*)DESC_ALLOC(sizeof(struct lwUSB_endpoint_descriptor_s));
 
     /* Init Descriptor */
 	epd->bLength = 7u ;
@@ -832,9 +831,46 @@ void * lwUSB_CreateEndpoint( void * phyHandle , uint8_t epAddress , enum e_lwUSB
 	return (void*)ep ;
 }
 
-//returns a string handle
-void * lwUSB_CreateString( char * stringContent ){
+/* This Function Creates a String Object .
+ * Param stringContent : Pointer to an Array of Data , Containing the String in any Encoding.
+ * Param stringLength  : Length of the String Data Array , Shall Contain the Total Number of Bytes that the String Occupies.
+ * Param stringID : ID Number of This String , 0,1,2,3 Values are reserved for Device Strings.
+ * Param enc : How is this String Encoded ? if it is Normal ASCII then the stack shall pad with zero bytes , if it is UTF16 Encoded already it is transmitted as is.
+ * Returns a handle to the string Object.
+ */
+void * lwUSB_CreateString( uint8_t * stringContent , uint32_t stringLength  , uint8_t stringID , enum lwUSB_String_Encoding_e enc ){
 
+	if ( !stringContent ){
+		return NULL;
+	}
+	if ( stringID == 0u ||
+		 stringID == 1u ||
+		 stringID == 2u ||
+		 stringID == 3u ){
+		return NULL;
+	}
+	if ( enc <= lwUSB_String_Encoding_e_Start  ||
+		 enc >= lwUSB_String_Encoding_e_End ){
+		return NULL;
+	}
+
+	uint32_t tvs = sizeof(struct lwUSB_string_s)+ sizeof(struct lwUSB_string_descriptor_s);
+
+	if ( VAR_PEEK(tvs) == FALSE ){
+		return NULL;
+	}
+
+	struct lwUSB_string_s * s = (struct lwUSB_string_s * )VAR_ALLOC(sizeof(struct lwUSB_string_s ));
+	struct lwUSB_string_descriptor_s * sd = (struct lwUSB_string_descriptor_s * )VAR_ALLOC(sizeof(struct lwUSB_string_descriptor_s ));
+
+	sd->bDescriptorType = e_lwUSB_bdescriptor_type_string;
+	sd->bLength = sizeof(struct lwUSB_string_descriptor_s) +  stringLength * (enc == lwUSB_String_Encoding_e_ASCII ? (2u) : (1u));
+
+	s->s_du = makeDataUnit((uint8_t*)stringContent, makeDataInfo(stringLength, enc));
+	s->s_d = sd;
+	s->s_id = stringID;
+
+	return (void*)s;
 }
 void * lwUSB_CreateInterface ( uint8_t * IString ) {
 
