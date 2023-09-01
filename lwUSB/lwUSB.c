@@ -799,9 +799,11 @@ void * lwUSB_CreateEndpoint( void * phyHandle , uint8_t epAddress ,  e_lwUSB_End
 		return NULL;
 	}
 
-	uint32_t tvs = sizeof(struct lwUSB_EndPoint_s) + sizeof( struct lwUSB_endpoint_descriptor_s);
+	uint32_t tvs = sizeof(struct lwUSB_EndPoint_s);
+	uint32_t tds = sizeof( struct lwUSB_endpoint_descriptor_s);
 
-	if ( VAR_PEEK(tvs) == FALSE ){
+	if ( VAR_PEEK(tvs)  == FALSE ||
+		 DESC_PEEK(tds) == FALSE ){
 		return NULL;
 	}
 
@@ -854,14 +856,15 @@ void * lwUSB_CreateString( uint8_t * stringContent , uint32_t stringLength  , ui
 		return NULL;
 	}
 
-	uint32_t tvs = sizeof(struct lwUSB_string_s)+ sizeof(struct lwUSB_string_descriptor_s);
+	uint32_t tvs = sizeof(struct lwUSB_string_s);
+	uint32_t tds = sizeof(struct lwUSB_string_descriptor_s);
 
-	if ( VAR_PEEK(tvs) == FALSE ){
+	if ( VAR_PEEK(tvs)  == FALSE ||
+		 DESC_PEEK(tds) == FALSE ){
 		return NULL;
 	}
-
 	struct lwUSB_string_s * s = (struct lwUSB_string_s * )VAR_ALLOC(sizeof(struct lwUSB_string_s ));
-	struct lwUSB_string_descriptor_s * sd = (struct lwUSB_string_descriptor_s * )VAR_ALLOC(sizeof(struct lwUSB_string_descriptor_s ));
+	struct lwUSB_string_descriptor_s * sd = (struct lwUSB_string_descriptor_s * )DESC_ALLOC(sizeof(struct lwUSB_string_descriptor_s ));
 
 	sd->bDescriptorType = e_lwUSB_bdescriptor_type_string;
 	sd->bLength = sizeof(struct lwUSB_string_descriptor_s) +  stringLength * (enc == lwUSB_String_Encoding_e_ASCII ? (2u) : (1u));
@@ -872,131 +875,145 @@ void * lwUSB_CreateString( uint8_t * stringContent , uint32_t stringLength  , ui
 
 	return (void*)s;
 }
-void * lwUSB_CreateInterface ( uint8_t * IString ) {
+void * lwUSB_CreateInterface ( uint8_t itfNumber , uint8_t itfClass , uint8_t  itfSubClass ,  uint8_t itfProtocol , uint8_t itfNumSettings ) {
 
-	struct lwUSB_interface_s * interface = (struct lwUSB_interface_s * )malloc(sizeof(struct lwUSB_interface_s ));
-	if ( !interface ){
-		return NULL ;
+
+	uint32_t tvs = sizeof(struct lwUSB_interface_s);
+	uint32_t tds = sizeof( struct lwUSB_interface_descriptor_s);
+
+	if ( VAR_PEEK(tvs)  == FALSE ||
+		 DESC_PEEK(tds) == FALSE ){
+		return NULL;
 	}
-	struct lwUSB_interface_descriptor_s * d_interface = (struct lwUSB_interface_descriptor_s* )malloc(sizeof(struct lwUSB_interface_descriptor_s));
-	if( !d_interface ){
-		free(interface);
-		return NULL ;
-	}
 
-//	uint8_t StringIndex = 0u  ;
-//	if ( IString ){
-//		StringIndex = lwUSB_controller.nextStringIndex++ ;
-//		interface->string = LWUSB_REGISTER_STRING_UTF16( StringIndex , IString );
-//		if ( !interface->string ){
-//			LW_DEBUG("String NULL for lwUSB_CreateInterface with S= %s \r\n" , IString );
-//		}
-//	}
+	struct lwUSB_interface_s * itf = (struct lwUSB_interface_s * )VAR_ALLOC(sizeof(struct lwUSB_interface_s ));
+	struct lwUSB_interface_descriptor_s * itfd = (struct lwUSB_interface_descriptor_s*)DESC_ALLOC(sizeof(struct lwUSB_interface_descriptor_s));
 
-	d_interface->bLength            = 9u ;
-	d_interface->bDescriptorType    = e_lwUSB_bdescriptor_type_interface ;
-	d_interface->bInterfaceNumber   = lwUSB_controller.nextInterfaceIndex++ ;
-	d_interface->bAlternateSetting  = 0u ;
-	/* todo Add Class Support */
-	d_interface->bInterfaceClass    = 0u ;
-	d_interface->bInterfaceSubclass = 0u ;
-	d_interface->bInterfaceProtocol = 0u ;
-	d_interface->bNumEndpoints      = 0u ;
-	d_interface->iInterface         = StringIndex ;
+	/* Init Descriptor */
+	itfd->bLength = sizeof(lwUSB_interface_descriptor_s);
+	itfd->bDescriptorType = 0x04;
+	itfd->bAlternateSetting = 0x00;
+	itfd->bInterfaceClass = itfClass;
+	itfd->bInterfaceSubclass = itfSubClass;
+	itfd->bInterfaceProtocol = itfProtocol;
+	itfd->bNumEndpoints = 0u;
+	itfd->iInterface = 0u;
+	/* Actually Number of Settings is an Interface Specific Field.
+	 * The Descriptor fields just describes the ID of the alternate Setting.
+	 *   */
+	itf->ns = itfNumSettings;
 
+	itf->itf_d = itfd;
+	itf->itf_pcfg = NULL;
+	itf->itf_s = NULL;
+	itf->itf_c = NULL;
 
-	interface->d_interface = d_interface ;
-	return interface ;
+	return (void*)itf ;
 }
 
-struct lwUSB_configuration_s *  lwUSB_CreateConfiguration ( uint8_t * IString ){
+void *  lwUSB_CreateConfiguration ( uint8_t cfgNumber , uint8_t cfgMaxPower , boolean cfgSelfPowered , boolean cfgRemoteWakeup  ){
 
-	struct lwUSB_configuration_s * config = (struct lwUSB_configuration_s * )malloc(sizeof(struct lwUSB_configuration_s ));
-	if ( !config ){
-		return NULL ;
-	}
-	struct lwUSB_configuration_descriptor_s * d_config = (struct lwUSB_configuration_descriptor_s* )malloc(sizeof(struct lwUSB_configuration_descriptor_s));
-	if( !d_config ){
-		free(config);
-		return NULL ;
+	uint32_t tvs = sizeof(struct lwUSB_configuration_s);
+	uint32_t tds = sizeof( struct lwUSB_configuration_descriptor_s);
+
+	if ( VAR_PEEK(tvs)  == FALSE ||
+		 DESC_PEEK(tds) == FALSE ){
+		return NULL;
 	}
 
-	uint8_t StringIndex = 0u  ;
-	if ( IString ){
-		StringIndex = lwUSB_controller.nextStringIndex++ ;
-		config->string = LWUSB_REGISTER_STRING_UTF16( StringIndex , IString );
+	struct lwUSB_configuration_s * cfg = (struct lwUSB_configuration_s * )VAR_ALLOC(sizeof(struct lwUSB_configuration_s ));
+	struct lwUSB_configuration_descriptor_s * cfgd = (struct lwUSB_configuration_descriptor_s*)DESC_ALLOC(sizeof(struct lwUSB_configuration_descriptor_s));
 
-		if ( !config->string ){
-			LW_DEBUG("String NULL for lwUSB_CreateConfiguration with S= %s \r\n" , IString );
-		}
-	}
+	cfgd->bLength = sizeof(lwUSB_configuration_descriptor_s);
+	cfgd->bDescriptorType = 0x02;
+	cfgd->wTotalLength = cfgd->bLength;
+	cfgd->bNumInterfaces = 0u;
+	cfgd->iConfiguration = 0u;
+	cfgd->reserved = 0u;
+	cfgd->usb1p1_Compatibility = 0u;
+	cfgd->selfPowered = cfgSelfPowered;
+	cfgd->remoteWakeup = cfgRemoteWakeup;
 
+	cfg->cfg_d = cfgd;
+	cfg->cfg_c = NULL;
+	cfg->cfg_s = NULL;
 
-	d_config->bLength             = 9u ;
-	d_config->wTotalLength        = 0u ;
-	d_config->bNumInterfaces      = 0u ;
-	d_config->bDescriptorType     = e_lwUSB_bdescriptor_type_configuration ;
-	d_config->bConfigurationValue = lwUSB_controller.nextConfigIndex++ ;
-	d_config->iConfiguration      = StringIndex ;
-
-
-	config->d_configuration = d_config ;
-	return config ;
-
+	return (void*)cfg;
 }
 
-
-
-uint32_t lwUSB_RegisterEndpoint ( struct lwUSB_endpoint_s * endpoint , struct lwUSB_interface_s * interface ){
+static lwUSB_Err register( void * child , void* parent ){
 	/* Null Check */
-	if ( !endpoint || !interface ){
-		return ERR_NULL ;
+	if ( !child ||
+		 !parent ){
+		return LWUSB_ERR_NULL ;
 	}
-	/* EP Address is 4 bits which gives a max of 16 Endpoints , this number is further limited by Number of Actual HW endpoints */
-	if ( interface->d_interface->bNumEndpoints > LWUSB_OPTS_NUM_HW_EPS-1 || interface->d_interface->bNumEndpoints >= 0x0F ){
-		return ERR_FAULT ;
+	struct lwUSB_interface_s * itf = (struct lwUSB_interface_s * )itf_Handle;
+	struct lwUSB_EndPoint_s * ep = (struct lwUSB_EndPoint_s *)ep_Handle;
+
+	uint32_t tvs = sizeof(struct ll_s);
+
+	if ( VAR_PEEK(tvs)  == FALSE ){
+		return LWUSB_ERR_MEM;
 	}
 
-	if ( interface->endpoint != NULL ){
-		if ( interface->endpoint->d_endpoint->Endpoint_number >= LWUSB_OPTS_NUM_HW_EPS-1 ){
-			return ERR_FAULT ;
-		}
-		/* Assign another EndPoint Number */
-		endpoint->d_endpoint->Endpoint_number = interface->endpoint->d_endpoint->Endpoint_number + 1u ;
+	ep->p_itf = itf;
+	struct ll_s * wep = (struct ll_s *)VAR_ALLOC(sizeof(struct ll_s));
+	wep->content =  (void*)ep;
+	wep->next = (void*)itf->itf_c;
+	itf->itf_c = wep;
+
+	return LWUSB_ERR_OK ;
+}
+lwUSB_Err lwUSB_RegisterEndpoint ( void * ep_Handle , void * itf_Handle ){
+
+	/* Null Check */
+	if ( !ep_Handle ||
+		 !itf_Handle ){
+		return LWUSB_ERR_NULL ;
 	}
-	else{
-		/* Interface has no Endpoints so assign the first */
-		endpoint->d_endpoint->Endpoint_number = 1u ;
+	struct lwUSB_interface_s * itf = (struct lwUSB_interface_s * )itf_Handle;
+	struct lwUSB_EndPoint_s * ep = (struct lwUSB_EndPoint_s *)ep_Handle;
+
+	uint32_t tvs = sizeof(struct ll_s);
+
+	if ( VAR_PEEK(tvs)  == FALSE ){
+		return LWUSB_ERR_MEM;
 	}
 
-	interface->d_interface->bNumEndpoints++ ;
-	/* Register EP to the interface */
-	endpoint->next = interface->endpoint ;
-	interface->endpoint = endpoint ;
+	ep->p_itf = itf;
+	struct ll_s * wep = (struct ll_s *)VAR_ALLOC(sizeof(struct ll_s));
+	wep->content =  (void*)ep;
+	wep->next = (void*)itf->itf_c;
+	itf->itf_c = wep;
 
-	return ERR_OK ;
+	return LWUSB_ERR_OK ;
 
 }
 
-uint32_t lwUSB_RegisterInterface ( struct lwUSB_interface_s * interface , struct lwUSB_configuration_s * config ){
+lwUSB_Err lwUSB_RegisterInterface ( void * itf_Handle , void * cfg_Handle ){
 	/* Null Check */
-	if ( !interface || !config ){
-		return ERR_NULL ;
-	}
-	/* Look for an Interface with the same index , so we don't register twice in the same configuration */
-	for ( struct lwUSB_interface_s *  temp_intf = config->interface ; temp_intf != NULL ; temp_intf = temp_intf->next ){
-		if ( temp_intf->d_interface->bInterfaceNumber == interface->d_interface->bInterfaceNumber ){
-			return ERR_FAULT ;
-		}
+	if ( !itf_Handle ||
+		 !cfg_Handle ){
+		return LWUSB_ERR_NULL ;
 	}
 
-	config->d_configuration->bNumInterfaces++ ;
-	/* Register EP to the interface */
-	interface->next = config->interface ;
-	config->interface = interface ;
-	return ERR_OK ;
+	struct lwUSB_configuration_s * cfg = (struct lwUSB_configuration_s * )cfg_Handle;
+	struct lwUSB_interface_s * itf = (struct lwUSB_interface_s *)itf_Handle;
 
+	uint32_t tvs = sizeof(struct ll_s);
 
+	if ( VAR_PEEK(tvs)  == FALSE ){
+		return LWUSB_ERR_MEM;
+	}
+
+	itf->itf_pcfg = cfg;
+
+	struct ll_s * itfw = (struct ll_s *)VAR_ALLOC(sizeof(struct ll_s));
+	itfw->content = (void*)itf;
+	itfw->next = cfg->cfg_c;
+	cfg->cfg_c = itfw;
+
+	return LWUSB_ERR_OK ;
 }
 
 uint32_t lwUSB_RegisterConfiguration ( struct lwUSB_configuration_s * config ){

@@ -34,14 +34,20 @@
 #define LWUSB_INTERNAL_EVENTS_S 33u
 #define LWUSB_ENUM_STRING_ENCODING_S 0U
 
+#define LWUSB_ERR_MEM   -3
+#define LWUSB_ERR_NULL  -2
+#define LWUSB_ERR_FAULT -1
+#define LWUSB_ERR_OK     0
 
 #define WEAK __attribute__((weak))
 
 typedef uint8_t boolean;
+typedef int32_t lwUSB_Err ;
 #define BOOL boolean;
 #define TRUE 1u
 #define FALSE 0u
 
+#define LWERR_
 struct ll_s {
 	void * content;
 	void * next ;
@@ -57,6 +63,12 @@ struct ll_s {
 #define BMREQUEST_RECIPIENT_ENDPOINT 2u
 #define BMREQUEST_RECIPIENT_OTHERS 3u
 #define USB_LANGID_ENGLISH  0x0409
+
+enum lwUSB_InternalEvents_e {
+	lwUSB_InternalEvents_e_Start = LWUSB_INTERNAL_EVENTS_S,
+	lwUSB_InternalEvents_e_OVF ,
+	lwUSB_InternalEvents_e_End = LWUSB_INTERNAL_EVENTS_S +  LWUSB_ENUM_TYPE_S + 1u ,
+};
 
 typedef enum {
 
@@ -385,10 +397,11 @@ struct lwUSB_EndPoint_s {
  */
 struct lwUSB_interface_s {
 
+	struct lwUSB_configuration_s * itf_pcfg ;      /* Link to Parent Configuration */
+	struct ll_s * itf_c;                           /* Wrapped Child EndPoints */
 	struct lwUSB_interface_descriptor_s * itf_d;   /* Interface Descriptor */
 	struct lwUSB_string_s * itf_s;                 /* Interface String Descriptor */
-	struct ll_s * itf_c;                           /* Wrapped Child EndPoints */
-	struct lwUSB_configuration_s * itf_pcfg ;      /* Link to Parent Configuration */
+	uint8_t ns;
 
 };
 
@@ -400,9 +413,10 @@ struct lwUSB_interface_s {
 
 struct lwUSB_configuration_s {
 
+	struct ll_s * cfg_c ;                              /* Wrapped Child Interfaces */
 	struct lwUSB_configuration_descriptor_s * cfg_d  ; /* Configuration Descriptor */
 	struct lwUSB_string_s * cfg_s ;                   /* Configuration String Descriptor */
-	struct ll_s * cfg_c ;                              /* Wrapped Child Interfaces */
+
 };
 
 #endif /* LWUSB_STD_H_ */
