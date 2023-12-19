@@ -50,7 +50,7 @@ typedef int32_t lwUSB_Err ;
 #define LWERR_
 struct ll_s {
 	void * content;
-	void * next ;
+	struct ll_s * next ;
 };
 
 #define BMREQUEST_DIRECTION_HOST_TO_DEVICE 0u
@@ -354,6 +354,14 @@ struct lwUSB_microsoft_os_string_descriptor_s {
 
 };
 
+
+struct lwUSB_Node {
+
+	void * content;                  /* Describes Data in this Node */
+	struct lwUSB_Node * parentNode;
+	struct lwUSB_Node * childNodes;  /* Describes Children of this Node */
+};
+
 /* Descripes a USB String Object */
 
 struct lwUSB_string_s {
@@ -383,7 +391,6 @@ struct lwUSB_PhyEndPoint_s {
 
 struct lwUSB_EndPoint_s {
 
-	struct lwUSB_interface_s * p_itf;          /* Link to Parent Interface */
 	struct lwUSB_endpoint_descriptor_s * ep_d; /* Referes to the meta Info about thie EP */
 	struct lwUSB_PhyEndPoint_s * ep_phy;       /* Refers to the physical EP , that this EP is based on. */
 };
@@ -397,11 +404,10 @@ struct lwUSB_EndPoint_s {
  */
 struct lwUSB_interface_s {
 
-	struct lwUSB_configuration_s * itf_pcfg ;      /* Link to Parent Configuration */
 	struct ll_s * itf_c;                           /* Wrapped Child EndPoints */
 	struct lwUSB_interface_descriptor_s * itf_d;   /* Interface Descriptor */
 	struct lwUSB_string_s * itf_s;                 /* Interface String Descriptor */
-	uint8_t ns;
+	uint8_t ns;                                    /* Number of Alternate Settings */
 
 };
 
@@ -415,8 +421,13 @@ struct lwUSB_configuration_s {
 
 	struct ll_s * cfg_c ;                              /* Wrapped Child Interfaces */
 	struct lwUSB_configuration_descriptor_s * cfg_d  ; /* Configuration Descriptor */
-	struct lwUSB_string_s * cfg_s ;                   /* Configuration String Descriptor */
+	struct lwUSB_string_s * cfg_s ;                    /* Configuration String Descriptor */
 
+};
+
+struct lwUSB_device_s {
+	struct ll_s * dev_c;                        /* Wrapped Child Configurations */
+	struct lwUSB_device_descriptor_s * dev_d ;  /* Device Descriptor */
 };
 
 #endif /* LWUSB_STD_H_ */

@@ -731,7 +731,7 @@ uint32_t lwUSB_Initialize_Endpoint ( struct lwUSB_ep_s * EndPoint ){
  * isDouble , flags this endpoint as a possible Control EndPoint , so two buffers are allocated one for rx and one for tx.
  * This Function Returns a handle to this physical EndPoint.
  */
-void * lwUSB_CreatePhysicalEndPoint( uint8_t epNum , uint32_t BufferSz , boolean isDouble ){
+Handle lwUSB_CreatePhysicalEndPoint( uint8_t epNum , uint32_t BufferSz , boolean isDouble ){
 	/* We Shall not assert epNum */
 	if ( !BufferSz ){
 		return NULL;
@@ -764,7 +764,7 @@ void * lwUSB_CreatePhysicalEndPoint( uint8_t epNum , uint32_t BufferSz , boolean
 	phy->dp_r = dp1;
 	phy->ep_n = epNum;
 
-	return (void*)phy;
+	return createHandle(e_handle_type_phy_endpoint,phy);
 }
 
 /* This Function Creates a Virtual EndPoint based on a Physical One
@@ -776,7 +776,7 @@ void * lwUSB_CreatePhysicalEndPoint( uint8_t epNum , uint32_t BufferSz , boolean
  * pollTms , Polling Interval in ms in case of interrupt and IsoChronous Eps.
  * returns a handle to the EndPoint.
  */
-void * lwUSB_CreateEndpoint( void * phyHandle , uint8_t epAddress ,  e_lwUSB_EndPoint_Type epType ,  e_lwUSB_EndPoint_Direction epDir , uint16_t maxPacketSize , uint16_t pollTms ) {
+Handle lwUSB_CreateEndpoint( void * phyHandle , uint8_t epAddress ,  e_lwUSB_EndPoint_Type epType ,  e_lwUSB_EndPoint_Direction epDir , uint16_t maxPacketSize , uint16_t pollTms ) {
 
 	if ( epType > e_lwUSB_EndPoint_Type_MAX ){
 		return NULL;
@@ -828,9 +828,8 @@ void * lwUSB_CreateEndpoint( void * phyHandle , uint8_t epAddress ,  e_lwUSB_End
 	/* Init EndPoint */
 	ep->ep_d = epd;
 	ep->ep_phy = (struct lwUSB_PhyEndPoint_s *) phyHandle;
-	ep->p_itf = NULL;
 
-	return (void*)ep ;
+	return createHandle(e_handle_type_endpoint,ep);
 }
 
 /* This Function Creates a String Object .
@@ -840,7 +839,7 @@ void * lwUSB_CreateEndpoint( void * phyHandle , uint8_t epAddress ,  e_lwUSB_End
  * Param enc : How is this String Encoded ? if it is Normal ASCII then the stack shall pad with zero bytes , if it is UTF16 Encoded already it is transmitted as is.
  * Returns a handle to the string Object.
  */
-void * lwUSB_CreateString( uint8_t * stringContent , uint32_t stringLength  , uint8_t stringID , enum lwUSB_String_Encoding_e enc ){
+Handle lwUSB_CreateString( uint8_t * stringContent , uint32_t stringLength  , uint8_t stringID , enum lwUSB_String_Encoding_e enc ){
 
 	if ( !stringContent ){
 		return NULL;
@@ -873,9 +872,9 @@ void * lwUSB_CreateString( uint8_t * stringContent , uint32_t stringLength  , ui
 	s->s_d = sd;
 	s->s_id = stringID;
 
-	return (void*)s;
+	return createHandle(e_handle_type_string,s);
 }
-void * lwUSB_CreateInterface ( uint8_t itfNumber , uint8_t itfClass , uint8_t  itfSubClass ,  uint8_t itfProtocol , uint8_t itfNumSettings ) {
+Handle lwUSB_CreateInterface ( uint8_t itfNumber , uint8_t itfClass , uint8_t  itfSubClass ,  uint8_t itfProtocol , uint8_t itfNumSettings ) {
 
 
 	uint32_t tvs = sizeof(struct lwUSB_interface_s);
@@ -904,14 +903,13 @@ void * lwUSB_CreateInterface ( uint8_t itfNumber , uint8_t itfClass , uint8_t  i
 	itf->ns = itfNumSettings;
 
 	itf->itf_d = itfd;
-	itf->itf_pcfg = NULL;
 	itf->itf_s = NULL;
 	itf->itf_c = NULL;
 
-	return (void*)itf ;
+	return createHandle(e_handle_type_interface,itf);
 }
 
-void *  lwUSB_CreateConfiguration ( uint8_t cfgNumber , uint8_t cfgMaxPower , boolean cfgSelfPowered , boolean cfgRemoteWakeup  ){
+Handle lwUSB_CreateConfiguration ( uint8_t cfgNumber , uint8_t cfgMaxPower , boolean cfgSelfPowered , boolean cfgRemoteWakeup  ){
 
 	uint32_t tvs = sizeof(struct lwUSB_configuration_s);
 	uint32_t tds = sizeof( struct lwUSB_configuration_descriptor_s);
@@ -927,28 +925,32 @@ void *  lwUSB_CreateConfiguration ( uint8_t cfgNumber , uint8_t cfgMaxPower , bo
 	cfgd->bLength = sizeof(lwUSB_configuration_descriptor_s);
 	cfgd->bDescriptorType = 0x02;
 	cfgd->wTotalLength = cfgd->bLength;
+	cfgd->bConfigurationValue = cfgNumber;
 	cfgd->bNumInterfaces = 0u;
 	cfgd->iConfiguration = 0u;
 	cfgd->reserved = 0u;
 	cfgd->usb1p1_Compatibility = 0u;
 	cfgd->selfPowered = cfgSelfPowered;
 	cfgd->remoteWakeup = cfgRemoteWakeup;
+	cfgd->bMaxPower = cfgMaxPower;
 
 	cfg->cfg_d = cfgd;
 	cfg->cfg_c = NULL;
 	cfg->cfg_s = NULL;
 
-	return (void*)cfg;
+	return createHandle(e_handle_type_configuration,cfg);
 }
 
-static lwUSB_Err register( void * child , void* parent ){
-	/* Null Check */
-	if ( !child ||
-		 !parent ){
-		return LWUSB_ERR_NULL ;
-	}
-	struct lwUSB_interface_s * itf = (struct lwUSB_interface_s * )itf_Handle;
-	struct lwUSB_EndPoint_s * ep = (struct lwUSB_EndPoint_s *)ep_Handle;
+
+lwUSB_Err lwUSB_RegisterEndpoint ( Handle ep_Handle , Handle itf_Handle ){
+
+	LW_ASSERT(ep_Handle->ht  == e_handle_type_endPoint);
+	LW_ASSERT(itf_Handle->ht == e_handle_type_interface);
+	LW_ASSERT(ep_Handle->hc != NULL);
+	LW_ASSERT(itf_Handle->hc != NULL);
+
+	struct lwUSB_interface_s * itf = (struct lwUSB_interface_s * )itf_Handle->hc;
+	struct lwUSB_EndPoint_s * ep = (struct lwUSB_EndPoint_s *)ep_Handle->hc;
 
 	uint32_t tvs = sizeof(struct ll_s);
 
@@ -956,7 +958,6 @@ static lwUSB_Err register( void * child , void* parent ){
 		return LWUSB_ERR_MEM;
 	}
 
-	ep->p_itf = itf;
 	struct ll_s * wep = (struct ll_s *)VAR_ALLOC(sizeof(struct ll_s));
 	wep->content =  (void*)ep;
 	wep->next = (void*)itf->itf_c;
@@ -964,49 +965,22 @@ static lwUSB_Err register( void * child , void* parent ){
 
 	return LWUSB_ERR_OK ;
 }
-lwUSB_Err lwUSB_RegisterEndpoint ( void * ep_Handle , void * itf_Handle ){
 
-	/* Null Check */
-	if ( !ep_Handle ||
-		 !itf_Handle ){
-		return LWUSB_ERR_NULL ;
-	}
-	struct lwUSB_interface_s * itf = (struct lwUSB_interface_s * )itf_Handle;
-	struct lwUSB_EndPoint_s * ep = (struct lwUSB_EndPoint_s *)ep_Handle;
+lwUSB_Err lwUSB_RegisterInterface ( Handle itf_Handle , Handle cfg_Handle ){
 
-	uint32_t tvs = sizeof(struct ll_s);
+	LW_ASSERT(cfg_Handle->ht  == e_handle_type_endPoint);
+	LW_ASSERT(itf_Handle->ht == e_handle_type_interface);
+	LW_ASSERT(cfg_Handle->hc != NULL);
+	LW_ASSERT(itf_Handle->hc != NULL);
 
-	if ( VAR_PEEK(tvs)  == FALSE ){
-		return LWUSB_ERR_MEM;
-	}
-
-	ep->p_itf = itf;
-	struct ll_s * wep = (struct ll_s *)VAR_ALLOC(sizeof(struct ll_s));
-	wep->content =  (void*)ep;
-	wep->next = (void*)itf->itf_c;
-	itf->itf_c = wep;
-
-	return LWUSB_ERR_OK ;
-
-}
-
-lwUSB_Err lwUSB_RegisterInterface ( void * itf_Handle , void * cfg_Handle ){
-	/* Null Check */
-	if ( !itf_Handle ||
-		 !cfg_Handle ){
-		return LWUSB_ERR_NULL ;
-	}
-
-	struct lwUSB_configuration_s * cfg = (struct lwUSB_configuration_s * )cfg_Handle;
-	struct lwUSB_interface_s * itf = (struct lwUSB_interface_s *)itf_Handle;
+	struct lwUSB_configuration_s * cfg = (struct lwUSB_configuration_s * )cfg_Handle->hc;
+	struct lwUSB_interface_s * itf = (struct lwUSB_interface_s *)itf_Handle->hc;
 
 	uint32_t tvs = sizeof(struct ll_s);
 
 	if ( VAR_PEEK(tvs)  == FALSE ){
 		return LWUSB_ERR_MEM;
 	}
-
-	itf->itf_pcfg = cfg;
 
 	struct ll_s * itfw = (struct ll_s *)VAR_ALLOC(sizeof(struct ll_s));
 	itfw->content = (void*)itf;
@@ -1016,34 +990,8 @@ lwUSB_Err lwUSB_RegisterInterface ( void * itf_Handle , void * cfg_Handle ){
 	return LWUSB_ERR_OK ;
 }
 
-uint32_t lwUSB_RegisterConfiguration ( struct lwUSB_configuration_s * config ){
-	/* Null Check */
-	if ( !config || !config->interface || !config->d_configuration ){
-		return ERR_NULL ;
-	}
-	/* Check for Config Value Uniqueness */
-	for ( struct lwUSB_configuration_s *  temp_config = lwUSB_controller.configurations ; temp_config != NULL ; temp_config = temp_config->next ){
-		if ( temp_config->d_configuration->bConfigurationValue == config->d_configuration->bConfigurationValue ){
-			return ERR_FAULT ;
-		}
-	}
-	/* Check Valid total length */
-	uint32_t totalLength = 0u ;
-	struct lwUSB_interface_s * interface ;
-	struct lwUSB_endpoint_s * endpoint ;
-	for ( interface = config->interface ; interface != NULL ; interface = interface->next ){
-		totalLength += interface->d_interface->bLength ;
-		for ( endpoint = interface->endpoint ; endpoint != NULL ; endpoint = endpoint->next ){
-			totalLength += endpoint->d_endpoint->bLength ;
-		}
-	}
-	lwUSB_Device_Descriptor.bNumConfigurations++ ;
-	config->d_configuration->wTotalLength = config->d_configuration->bLength + totalLength ;
 
-	/* Register Configuration */
-	config->next = lwUSB_controller.configurations ;
-	lwUSB_controller.configurations = config ;
+lwUSB_Err lwUSB_RegisterConfiguration ( void * cfg_Handle ){
 
-	return ERR_OK ;
 
 }
