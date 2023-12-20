@@ -868,7 +868,9 @@ Handle lwUSB_CreateString( uint8_t * stringContent , uint32_t stringLength  , ui
 	sd->bDescriptorType = e_lwUSB_bdescriptor_type_string;
 	sd->bLength = sizeof(struct lwUSB_string_descriptor_s) +  stringLength * (enc == lwUSB_String_Encoding_e_ASCII ? (2u) : (1u));
 
-	s->s_du = makeDataUnit((uint8_t*)stringContent, makeDataInfo(stringLength, enc));
+	s->s_ptr = stringContent;
+	s->s_len = stringLength;
+	s->s_enc = enc;
 	s->s_d = sd;
 	s->s_id = stringID;
 
@@ -889,7 +891,7 @@ Handle lwUSB_CreateInterface ( uint8_t itfNumber , uint8_t itfClass , uint8_t  i
 	struct lwUSB_interface_descriptor_s * itfd = (struct lwUSB_interface_descriptor_s*)DESC_ALLOC(sizeof(struct lwUSB_interface_descriptor_s));
 
 	/* Init Descriptor */
-	itfd->bLength = sizeof(lwUSB_interface_descriptor_s);
+	itfd->bLength = sizeof(struct lwUSB_interface_descriptor_s);
 	itfd->bDescriptorType = 0x04;
 	itfd->bAlternateSetting = 0x00;
 	itfd->bInterfaceClass = itfClass;
@@ -922,7 +924,7 @@ Handle lwUSB_CreateConfiguration ( uint8_t cfgNumber , uint8_t cfgMaxPower , boo
 	struct lwUSB_configuration_s * cfg = (struct lwUSB_configuration_s * )VAR_ALLOC(sizeof(struct lwUSB_configuration_s ));
 	struct lwUSB_configuration_descriptor_s * cfgd = (struct lwUSB_configuration_descriptor_s*)DESC_ALLOC(sizeof(struct lwUSB_configuration_descriptor_s));
 
-	cfgd->bLength = sizeof(lwUSB_configuration_descriptor_s);
+	cfgd->bLength = sizeof(struct lwUSB_configuration_descriptor_s);
 	cfgd->bDescriptorType = 0x02;
 	cfgd->wTotalLength = cfgd->bLength;
 	cfgd->bConfigurationValue = cfgNumber;

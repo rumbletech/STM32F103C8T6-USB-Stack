@@ -8,7 +8,7 @@
 #ifndef LWUSB_INTF_H_
 #define LWUSB_INTF_H_
 
-#include "DataPool/DataPool.h"
+#include "RingBuffer.h"
 #include "lwUSB.h"
 
 void lwUSB_Intf_Init ( struct DataPool_s * pool );

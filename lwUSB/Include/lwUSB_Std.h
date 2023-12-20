@@ -12,7 +12,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "lwUSB_Opts.h"
-#include "../DataUnit/DataUnit.h"
 
 /* MAXIMUM Value Allowed By Stack */
 #define LWUSB_MAX_EP_N     8u
@@ -368,7 +367,9 @@ struct lwUSB_string_s {
 
 	struct lwUSB_string_descriptor_s * s_d ;
 	uint8_t s_id ;
-	struct DataUnit_s s_du;
+	uint8_t* s_ptr;
+	uint8_t  s_len;
+	uint8_t  s_enc;
 };
 
 /* This describes the physical aspect of the EndPoint ,
