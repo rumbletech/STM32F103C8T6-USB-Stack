@@ -8,6 +8,8 @@
 #ifndef RING_BUFFER_H_
 #define RING_BUFFER_H_
 
+#include "Include/lwUSB_Std.h"
+
 /* naming convention */
 /* _s stands for type struct struct_name_s     ---> struct_name_s
  * _p stands for struct struct_name_s *        ---> struct-name_p

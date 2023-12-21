@@ -33,7 +33,7 @@ void USB_LP_CAN_RX0_IRQHandler ( void )
 		//Clear Flag
 		USB->ISTR &= ~USB_ISTR_RESET_Msk ;
 		//Reset Handler
-		lwUSB_Reset();
+//		lwUSB_Reset();
 		usb_state = USB_STATE_RESET;
 	}
 	else if ( USB->ISTR & USB_ISTR_CTR_Msk ){

@@ -34,6 +34,9 @@
 #define LW_ASSERT(CONDITION) LW_NO_ASSERT(CONDITION)
 #endif
 
+#define LW_ASSERT_RETURN(CONDITION,RET) if (!(CONDITION)){        \
+	                                		return RET;           \
+										}                         \
 
 #define ERRS_BAD_ARGS " ERR_BAD_ARGS"
 

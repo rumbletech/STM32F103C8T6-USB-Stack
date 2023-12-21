@@ -15,12 +15,13 @@
 #include "lwUSB_Intf.h"
 #include "Event/Event.h"
 #include "Arbiter.h"
-#include "Include/lwUSB_Err.h"
+#include "ringbuffer.h"
 
-static struct DataPool_s * intfPool;
+static struct RingBuffer_s  itf_b;
+static uint8_t itf_mem[LWUSB_ITF_M_S];
 
-void lwUSB_Intf_Init ( struct DataPool_s * pool ){
-	intfPool = pool ;
+void lwUSB_Intf_Init ( void ){
+	RingBuffer_Init(&itf_b, &itf_mem[0], LWUSB_ITF_M_S);
 	return;
 }
 
@@ -32,10 +33,8 @@ void lwUSB_Intf_SignalBusEvents(enum lwUSB_BusEvent_e busEvent_e ){
 
 void lwUSB_Intf_PushData( uint8_t epNum , uint8_t* epData , uint16_t epDataSz ){
 
-	struct DataUnit_s du = makeDataUnit(epData, makeDataInfo(epDataSz, epNum));
-	uint8_t ps = DataPool_Push(intfPool, du);
-	if ( !ps ){
-		sigInternal(lwUSB_InternalEvents_e_OVF);
-	}
+//	if ( !ps ){
+//		sigInternal(lwUSB_InternalEvents_e_OVF);
+//	}
 	return;
 }

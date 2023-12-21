@@ -14,7 +14,7 @@
 
 /* Configuration Parameters for Microcontroller Specific PMA Buffer */
 
-#define LWUSB_PMA_EP_NUM LWUSB_OPTS_NUM_HW_EPS                      /* Number of Hardware EPS , To Calculate Size of Btable */
+#define LWUSB_PMA_EP_NUM 8                      /* Number of Hardware EPS , To Calculate Size of Btable */
 #define LWUSB_PMA_BUFF_ALIGNMENT 2u									/* Alignment of PMA Memory */
 #define LWUSB_PMA_MEM_SIZE 512u									    /* Total Supported Memory Size */
 #define LWUSB_PMA_START_ADDR USB_PMAADDR							/* PMA Start Address */

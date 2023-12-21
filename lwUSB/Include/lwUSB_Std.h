@@ -33,6 +33,7 @@
 #define LWUSB_INTERNAL_EVENTS_S 33u
 #define LWUSB_ENUM_STRING_ENCODING_S 0U
 
+#define LWUSB_ERR_PARAM -4
 #define LWUSB_ERR_MEM   -3
 #define LWUSB_ERR_NULL  -2
 #define LWUSB_ERR_FAULT -1
@@ -188,6 +189,32 @@ typedef enum {
 	e_lwUSB_setup_request_set_isochronous_delay = 0x31 ,
 
 } e_lwUSB_setup_request ;
+
+enum lwUSB_BusEvent_e {
+	lwUSB_BusEvent_e_Start = LWUSB_BUS_EVENTS_S,
+	lwUSB_BusEvent_e_RESET,
+	lwUSB_BusEvent_e_SUSPEND,
+	lwUSB_BusEvent_e_RX,
+	lwUSB_BusEvent_e_TX,
+	lwUSB_BusEvent_e_SetAddress,
+	lwUSB_BusEvent_e_SETUP,
+	lwUSB_BusEvent_e_ERR,
+	lwUSB_BusEvent_e_WAKEUP,
+	lwUSB_BusEvent_e_End = LWUSB_BUS_EVENTS_S  + LWUSB_ENUM_TYPE_S + 1u,
+};
+
+/* lwUSB shall Support UTF16 and ASCII Strings ,
+ * if lwUSB_String_Encoding_e_ASCII is used , then lwUSB Shall Make Conversion to UTF16 On Sending the String and Descriptors.
+ * if lwUSB_String_Encoding_e_UTF16 is used , then lwUSB Shall assume the character array to be already encoded and shall transmit as is.
+ */
+enum lwUSB_String_Encoding_e {
+	lwUSB_String_Encoding_e_Start = LWUSB_ENUM_STRING_ENCODING_S,
+	lwUSB_String_Encoding_e_ASCII,
+	lwUSB_String_Encoding_e_UTF16,
+	lwUSB_String_Encoding_e_End = LWUSB_ENUM_STRING_ENCODING_S  + LWUSB_ENUM_TYPE_S + 1u,
+};
+
+
 
 struct lwUSB_device_descriptor_s {
 
@@ -381,8 +408,8 @@ struct lwUSB_string_s {
 struct lwUSB_PhyEndPoint_s {
 
 	uint8_t ep_n;              /* This is the link between Hardware EndPoint and a FW EndPoint */
-    struct DataPool_s * dp;    /* Handle to the Internal Allocated Memory for the EndPoint */
-    struct DataPool_s * dp_r;  /* another Handle in case of INOUT EndPoints */
+    struct RingBuffer_s * dp;    /* Handle to the Internal Allocated Memory for the EndPoint */
+    struct RingBuffer_s * dp_r;  /* another Handle in case of INOUT EndPoints */
 
 };
 /* Note : any EndPoint that shall be created , Shall have

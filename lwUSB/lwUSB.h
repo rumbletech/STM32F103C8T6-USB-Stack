@@ -23,29 +23,6 @@
 
 /* TYPES Exposed to the USER */
 
-enum lwUSB_BusEvent_e {
-	lwUSB_BusEvent_e_Start = LWUSB_BUS_EVENTS_S,
-	lwUSB_BusEvent_e_RESET,
-	lwUSB_BusEvent_e_SUSPEND,
-	lwUSB_BusEvent_e_RX,
-	lwUSB_BusEvent_e_TX,
-	lwUSB_BusEvent_e_SetAddress,
-	lwUSB_BusEvent_e_SETUP,
-	lwUSB_BusEvent_e_ERR,
-	lwUSB_BusEvent_e_WAKEUP,
-	lwUSB_BusEvent_e_End = LWUSB_BUS_EVENTS_S  + LWUSB_ENUM_TYPE_S + 1u,
-};
-
-/* lwUSB shall Support UTF16 and ASCII Strings ,
- * if lwUSB_String_Encoding_e_ASCII is used , then lwUSB Shall Make Conversion to UTF16 On Sending the String and Descriptors.
- * if lwUSB_String_Encoding_e_UTF16 is used , then lwUSB Shall assume the character array to be already encoded and shall transmit as is.
- */
-enum lwUSB_String_Encoding_e {
-	lwUSB_String_Encoding_e_Start = LWUSB_ENUM_STRING_ENCODING_S,
-	lwUSB_String_Encoding_e_ASCII,
-	lwUSB_String_Encoding_e_UTF16,
-	lwUSB_String_Encoding_e_End = LWUSB_ENUM_STRING_ENCODING_S  + LWUSB_ENUM_TYPE_S + 1u,
-};
 
 /* OTHERS to USER */
 

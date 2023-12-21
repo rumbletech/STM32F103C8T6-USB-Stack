@@ -7,16 +7,17 @@
  * This Implements a Simple Ring/Circular Buffer.
  * ***********************************************************************
  */
-#include <stddef.h>
-#include "RingBuffer.h"
+#include "ringbuffer.h"
 
-#include "../Include/lwUSB_Debug.h"
+#include <stddef.h>
+#include "Include/lwUSB_Debug.h"
+#include "memctrl.h"
 
 
 #if defined(DP_DEBUG_EN) && DP_DEBUG_EN != 0u
-#define DP_PRINT(STR)
+#define RB_PRINT(STR)
 #else
-#define DP_PRINT(STR) (void*)(STR)
+#define RB_PRINT(STR) (void*)(STR)
 #endif
 
 
@@ -45,7 +46,9 @@ uint8_t RingBuffer_isEmpty( struct RingBuffer_s * rb ){
 uint8_t RingBuffer_isFull( struct RingBuffer_s * rb ){
 	return rb->isFull ;
 }
-
+uint32_t RingBuffer_GetWritePointer( struct RingBuffer_s * rb ){
+	return rb->write_p;
+}
 static void write( struct RingBuffer_s * rb , uint8_t * src , uint32_t length ){
 	uint32_t i = 0 ;
 	for ( ; i < length && !RingBuffer_isFull(rb) ; i++ ){
@@ -53,7 +56,7 @@ static void write( struct RingBuffer_s * rb , uint8_t * src , uint32_t length ){
 		increment_wrp(rb);
 	}
 	if ( i != length ){
-		DP_PRINT("DP : WRF\r\n");
+		RB_PRINT("DP : WRF\r\n");
 	}
 	return ;
 }
@@ -65,7 +68,7 @@ static void read( struct RingBuffer_s * rb , uint8_t *dst , uint32_t length ){
 		increment_rrb(rb);
 	}
 	if ( i != length ){
-		DP_PRINT("DP : RDF\r\n");
+		RB_PRINT("DP : RDF\r\n");
 	}
 	return ;
 }
@@ -87,7 +90,7 @@ uint32_t RingBuffer_GetUsedSpace ( struct RingBuffer_s * rb  ){
 void RingBuffer_Init( struct RingBuffer_s * rb , uint8_t * pool_b , uint32_t pool_sz ){
 
 	if ( rb == NULL || pool_b == NULL ){
-		DP_PRINT("DP: NULL d\r\n");
+		RB_PRINT("DP: NULL d\r\n");
 		return;
 	}
 	rb->internBuffer_p = pool_b;
@@ -103,7 +106,7 @@ uint8_t RingBuffer_Push( struct RingBuffer_s * rb , uint8_t* du , uint32_t dl){
 
 	uint32_t freeSpace = RingBuffer_GetFreeSpace(rb);
 	if ( dl > freeSpace ){
-		DP_PRINT("DP: > d\r\n");
+		RB_PRINT("DP: > d\r\n");
 		return 0u;
 	}
 	write( rb , du , dl);
@@ -114,7 +117,7 @@ uint8_t RingBuffer_Get( struct RingBuffer_s * rb , uint8_t* du , uint32_t dl){
 
 	uint32_t usedSpace = RingBuffer_GetUsedSpace(rb);
 	if ( usedSpace < dl ){
-		DP_PRINT("DP: < d\r\n");
+		RB_PRINT("DP: < d\r\n");
 		return 0u;
 	}
 	read( rb , du , dl );

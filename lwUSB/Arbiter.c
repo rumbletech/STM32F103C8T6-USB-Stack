@@ -14,11 +14,8 @@
 #include "Include/lwUSB_Opts.h"
 #include "memctrl.h"
 
-#define INTF_POOL_SZ 512u
 #define BUS_EVENTS_SZ 32u
 
-static uint8_t intf_pool_p[INTF_POOL_SZ];
-static struct DataPool_s intf_datapool;
 static struct Event_s BusEvents[lwUSB_BusEvent_e_End-lwUSB_BusEvent_e_Start-1u];
 static uint32_t (*busHandlers[lwUSB_BusEvent_e_End-lwUSB_BusEvent_e_Start-1u])(struct Event_s * ev ) = {
 LWUSB_BUS_HANDLERS
@@ -36,10 +33,8 @@ void Arbiter_Init ( void ){
 	/* Initialize the memory controller , this allows static allocation
 	 * for physical endpoints , descriptors and control structures */
 	memctrl_init();
-	/* Init Interface Pool */
-	DataPool_Init(&intf_datapool, &intf_pool_p[0ul], sizeof(intf_pool_p));
 	/* Init Interface */
-	lwUSB_Intf_Init(&intf_datapool);
+	lwUSB_Intf_Init();
 	/* Init Bus Events Structures */
 	for ( uint32_t iD = lwUSB_BusEvent_e_Start + 1u , j = 0u ; iD < lwUSB_BusEvent_e_End ; iD++ , j++ ){
 		Event_Init(&BusEvents[j], iD , busHandlers[j] ,  NULL, EventErrorHandler, UINT32_MAX);
