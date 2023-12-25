@@ -5,6 +5,11 @@
  *      Author: mrashada
  */
 
+
+
+#ifndef TREE_H_
+#define TREE_H_
+
 #include "Include/lwUSB_Debug.h"
 #include "Include/lwUSB_Std.h"
 
@@ -66,17 +71,22 @@ typedef struct EndPoint_Inf_s {
 typedef struct Phy_Inf_s {
 
 	boolean  phy_isDouble;
+	uint8_t * phy_IN;
+	uint8_t * phy_OUT;
+	uint16_t phy_hwbSize;
 	uint16_t phy_buffSize;
 	uint8_t  phy_EpNumber;
 
 }Phy_Inf;
 
 
+void tree_Init( void );
+Handle tree_getDev( void );
 Handle tree_CreateEndpointHandle( struct EndPoint_Inf_s * info ) ;
 Handle tree_CreateStringHandle( struct String_Inf_s * info );
 Handle tree_CreateInterfaceHandle ( struct Interface_Inf_s * info );
 Handle tree_CreateConfigurationHandle ( struct Configuration_Inf_s * info );
 Handle tree_CreatePhyHandle( struct Phy_Inf_s * info );
-lwUSB_Err tree_RegisterEndPoint ( Handle ep , Handle itf );
-lwUSB_Err tree_RegisterInterface ( Handle itf , Handle cfg );
-lwUSB_Err tree_RegisterConfiguration( Handle cfg );
+lwUSB_Err tree_registerChild( Handle child , Handle parent );
+
+#endif

@@ -4,47 +4,67 @@
 #include "Include/lwUSB_Debug.h"
 #include "Include/lwUSB_Std.h"
 #include "memctrl.h"
-#include "tree.h"
-
-//#define LWUSB_GET_CONFIG_V_NUM(VALUE) (VALUE-LWUSB_OPTS_CONFIG_VALUE_START)
-#define LWUSB_STRLEN(STR) (strlen((char*)STR))
-#define LWUSB_REGISTER_STRING_UTF16(ISTR  , STR ) ( lwUSB_RegisterString(ISTR , STR ,LWUSB_STRLEN(STR) , LWUSB_STRINGD_ENCODE_UTF16 ) )
-//#define LWUSB_REGISTER_STRING_RAW(ISTR ,  STR , LEN ) ( lwUSB_RegisterString(ISTR , STR , LEN , LWUSB_STRINGD_ENCODE_RAW ) )
-
-	static uint8_t debug = 0 ;
-
-//todo remove
-extern volatile int32_t usb_state ;
-static uint32_t string_indexing  = 0 ;
-static uint32_t get               = 0 ;
-
-typedef enum  {
-
-	e_lwUSB_ep_type_bulk      = 0b00 ,
-	e_lwUSB_ep_type_control   = 0b01 ,
-	e_lwUSB_ep_type_iso       = 0b10 ,
-	e_lwUSB_ep_type_interrupt = 0b11
-} e_lWUSB_ep_type ;
-
-typedef enum {
-
-	e_lwUSB_ep_dir_inout   = 0u ,
-	e_lwUSB_ep_dir_in    = 1u ,
-	e_lwUSB_ep_dir_out   = 2u ,
-
-} e_lwUSB_ep_dir ;
+#include "arbiter.h"
+#include "sw_itf.h"
 
 
-typedef enum {
 
-	e_lwUSB_controller_state_Default = 0u ,
-	e_lwUSB_controller_state_address = 1u ,
-	e_lwUSB_controller_state_configured = 2u ,
-	e_lwUSB_controller_state_suspended = 3u ,
-	e_lwUSB_controller_state_attached = 4u ,                    //attached but not powered todo
+lwUSB_Err lwUSB_Init(void){
+
+	Arbiter_Init();
+
+	return LWUSB_ERR_OK;
+
+}
+
+lwUSB_Err lwUSB_Main(void){
+
+	Arbiter_Main();
+
+	return LWUSB_ERR_OK;
+
+}
 
 
-} e_lwUSB_controller_state ;
+////#define LWUSB_GET_CONFIG_V_NUM(VALUE) (VALUE-LWUSB_OPTS_CONFIG_VALUE_START)
+//#define LWUSB_STRLEN(STR) (strlen((char*)STR))
+//#define LWUSB_REGISTER_STRING_UTF16(ISTR  , STR ) ( lwUSB_RegisterString(ISTR , STR ,LWUSB_STRLEN(STR) , LWUSB_STRINGD_ENCODE_UTF16 ) )
+////#define LWUSB_REGISTER_STRING_RAW(ISTR ,  STR , LEN ) ( lwUSB_RegisterString(ISTR , STR , LEN , LWUSB_STRINGD_ENCODE_RAW ) )
+//
+//	static uint8_t debug = 0 ;
+//
+////todo remove
+//extern volatile int32_t usb_state ;
+//static uint32_t string_indexing  = 0 ;
+//static uint32_t get               = 0 ;
+//
+//typedef enum  {
+//
+//	e_lwUSB_ep_type_bulk      = 0b00 ,
+//	e_lwUSB_ep_type_control   = 0b01 ,
+//	e_lwUSB_ep_type_iso       = 0b10 ,
+//	e_lwUSB_ep_type_interrupt = 0b11
+//} e_lWUSB_ep_type ;
+//
+//typedef enum {
+//
+//	e_lwUSB_ep_dir_inout   = 0u ,
+//	e_lwUSB_ep_dir_in    = 1u ,
+//	e_lwUSB_ep_dir_out   = 2u ,
+//
+//} e_lwUSB_ep_dir ;
+//
+//
+//typedef enum {
+//
+//	e_lwUSB_controller_state_Default = 0u ,
+//	e_lwUSB_controller_state_address = 1u ,
+//	e_lwUSB_controller_state_configured = 2u ,
+//	e_lwUSB_controller_state_suspended = 3u ,
+//	e_lwUSB_controller_state_attached = 4u ,                    //attached but not powered todo
+//
+//
+//} e_lwUSB_controller_state ;
 
 //struct lwUSB_controller_s {
 //
@@ -667,15 +687,18 @@ uint32_t lwUSB_Handle_CTR ( uint8_t EPn ){
  * isDouble , flags this endpoint as a possible Control EndPoint , so two buffers are allocated one for rx and one for tx.
  * This Function Returns a handle to this physical EndPoint.
  */
-Handle lwUSB_CreatePhysicalEndPoint( uint8_t epNum , uint32_t BufferSz , boolean isDouble ){
+Handle lwUSB_CreatePhysicalEndPoint( uint8_t epNum , uint32_t BufferSz , boolean isDouble , uint8_t * out_b , uint8_t * in_b , uint32_t b_size ){
 
 	struct Phy_Inf_s info;
 
 	info.phy_EpNumber = epNum;
 	info.phy_buffSize = BufferSz;
 	info.phy_isDouble = isDouble;
+	info.phy_IN       = in_b;
+	info.phy_OUT      = out_b;
+	info.phy_hwbSize  = b_size;
 
-	return tree_CreatePhyHandle(&info);
+	return sw_itf_CreatePhyHandle(&info);
 }
 
 /* This Function Creates a Virtual EndPoint based on a Physical One
@@ -698,7 +721,7 @@ Handle lwUSB_CreateEndpoint( Handle phyHandle , uint8_t epAddress ,  e_lwUSB_End
 	info.pollTms = pollTms;
 	info.phyHandle = phyHandle;
 
-	return tree_CreateEndpointHandle(&info);
+	return sw_itf_CreateEndpointHandle(&info);
 }
 
 /* This Function Creates a String Object .
@@ -717,7 +740,7 @@ Handle lwUSB_CreateString( uint8_t * stringContent , uint32_t stringLength  , ui
 	info.str_encoding = enc;
 	info.str_id = stringID;
 
-	return tree_CreateStringHandle(&info);
+	return sw_itf_CreateStringHandle(&info);
 }
 Handle lwUSB_CreateInterface ( uint8_t itfNumber , uint8_t itfClass , uint8_t  itfSubClass ,  uint8_t itfProtocol , uint8_t itfNumSettings ) {
 
@@ -730,7 +753,7 @@ Handle lwUSB_CreateInterface ( uint8_t itfNumber , uint8_t itfClass , uint8_t  i
 	info.itf_numAlternateSettings = itfNumSettings;
 	info.itf_number = itfNumber;
 
-	return tree_CreateInterfaceHandle(&info);
+	return sw_itf_CreateInterfaceHandle(&info);
 }
 
 Handle lwUSB_CreateConfiguration ( uint8_t cfgNumber , uint8_t cfgMaxPower , boolean cfgSelfPowered , boolean cfgRemoteWakeup  ){
@@ -742,20 +765,28 @@ Handle lwUSB_CreateConfiguration ( uint8_t cfgNumber , uint8_t cfgMaxPower , boo
 	info.cfg_remoteWakeUp = cfgRemoteWakeup;
 	info.cfg_selfPowered = cfgSelfPowered;
 
-	return tree_CreateConfigurationHandle(&info);
+	return sw_itf_CreateConfigurationHandle(&info);
 }
 
 lwUSB_Err lwUSB_RegisterEndPoint ( Handle h_EndPoint , Handle h_Interface ){
 
-	return tree_RegisterEndPoint(h_EndPoint,h_Interface);
+	return sw_itf_RegisterEndPoint(h_EndPoint,h_Interface);
 }
 
 lwUSB_Err lwUSB_RegisterInterface ( Handle h_Interface , Handle h_Configuration ){
 
-	return tree_RegisterEndPoint(h_Interface,h_Configuration);
+	return sw_itf_RegisterInterface(h_Interface,h_Configuration);
 }
 
 lwUSB_Err lwUSB_RegisterConfiguration ( Handle h_Configuration ){
 
-	return tree_RegisterConfiguration(h_Configuration);
+	return sw_itf_RegisterConfiguration(h_Configuration);
+}
+
+lwUSB_Err lwUSB_Start( void ){
+
+	sw_itf_SysStart();
+
+	return LWUSB_ERR_OK;
+
 }

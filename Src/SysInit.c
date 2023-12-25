@@ -152,7 +152,7 @@ void SysInit( void )
 	RCC_Init();
 	DebugUSART_Init();
 	GPIO_Init();
-	USB_Init();
+//	USB_Init();
 
 
 }

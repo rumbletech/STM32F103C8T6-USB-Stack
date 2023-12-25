@@ -48,7 +48,7 @@ void * memctrl_alloc( uint32_t bSize  , enum e_mem_type mt ){
 	return mem_alloc(msrc , bSize);
 }
 
-BOOL memctrl_peek( uint32_t bSize , enum e_mem_type mt ){
+boolean memctrl_peek( uint32_t bSize , enum e_mem_type mt ){
 
 	struct mem_s * msrc = NULL ;
 
@@ -63,7 +63,7 @@ BOOL memctrl_peek( uint32_t bSize , enum e_mem_type mt ){
 		msrc = &sm;
 		break;
 	default:
-		return NULL;
+		return 0u;
 	}
 	return mem_peek(msrc , bSize);
 

@@ -13,13 +13,13 @@
 /*****************************************************************************/
 /**************************** Switches ***************************************/
 #define DP_DEBUG_EN 1u         /* DataPool Debug Enable */
-
+#define LW_ASSERT_EN 1u
 /*****************************************************************************/
 #define LW_NO_PRINTF(...)
 #define LW_NO_ASSERT(CONDITION)
 /***************** Printf/ASSERT used for debugging purposes *****************/
 // Define as Follows : LW_PRINTF(...) TargetPrintf(__VA_ARGS__)
-#define LW_PRINTF(...) LW_NO_PRINTF(__VA_ARGS__)
+#define LW_PRINTF(...) targetPrintf(__VA_ARGS__)
 
 /***************** LW_DEBUG **************************************************/
 #if defined(LW_DEBUG_EN) && LW_DEBUG_EN != 0

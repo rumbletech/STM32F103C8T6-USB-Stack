@@ -191,7 +191,6 @@ typedef enum {
 } e_lwUSB_setup_request ;
 
 enum lwUSB_BusEvent_e {
-	lwUSB_BusEvent_e_Start = LWUSB_BUS_EVENTS_S,
 	lwUSB_BusEvent_e_RESET,
 	lwUSB_BusEvent_e_SUSPEND,
 	lwUSB_BusEvent_e_RX,
@@ -200,7 +199,7 @@ enum lwUSB_BusEvent_e {
 	lwUSB_BusEvent_e_SETUP,
 	lwUSB_BusEvent_e_ERR,
 	lwUSB_BusEvent_e_WAKEUP,
-	lwUSB_BusEvent_e_End = LWUSB_BUS_EVENTS_S  + LWUSB_ENUM_TYPE_S + 1u,
+	lwUSB_BusEvent_e_End,
 };
 
 /* lwUSB shall Support UTF16 and ASCII Strings ,
@@ -212,6 +211,20 @@ enum lwUSB_String_Encoding_e {
 	lwUSB_String_Encoding_e_ASCII,
 	lwUSB_String_Encoding_e_UTF16,
 	lwUSB_String_Encoding_e_End = LWUSB_ENUM_STRING_ENCODING_S  + LWUSB_ENUM_TYPE_S + 1u,
+};
+
+/* HAL LAYER DEVICE_STATUS */
+
+struct lwUSB_Status {
+
+	uint32_t RESET : 1;
+	uint32_t SUSP  : 1;
+	uint32_t TXC   : 1;
+	uint32_t RXC   : 1;
+	uint32_t WKUP  : 1;
+	uint32_t ERR   : 1;
+	uint32_t SETUP : 1;
+
 };
 
 
@@ -408,6 +421,8 @@ struct lwUSB_string_s {
 struct lwUSB_PhyEndPoint_s {
 
 	uint8_t ep_n;              /* This is the link between Hardware EndPoint and a FW EndPoint */
+	struct LinearBuffer_s * lb;
+	struct LinearBuffer_s * lb_r;
     struct RingBuffer_s * dp;    /* Handle to the Internal Allocated Memory for the EndPoint */
     struct RingBuffer_s * dp_r;  /* another Handle in case of INOUT EndPoints */
 

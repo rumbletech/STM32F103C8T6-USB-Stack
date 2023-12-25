@@ -7,9 +7,8 @@
 
 #include "tree.h"
 #include "ringbuffer.h"
+#include "linearbuffer.h"
 #include "memctrl.h"
-
-#define NULL_HANDLE (uint64_t)0u
 
 struct parent_node_s {
 	struct ll_s * child_nodes;
@@ -20,13 +19,46 @@ struct parent_node_s {
 static struct lwUSB_device_descriptor_s dev_ds;
 static struct lwUSB_device_s dev;
 static Handle dev_h;
-static boolean tree_initDone;
 
 static inline Handle createHandle( htype t , void* c ){
 	Handle h;
 	h.ht = t;
 	h.hc = c;
 	return h;
+}
+
+lwUSB_Err tree_CalculateDescriptors ( void ){
+
+	struct ll_s * w_cfg = dev.dev_c;
+
+	uint8_t n_cfg = 0u;
+
+	while( w_cfg != NULL ){
+		struct lwUSB_configuration_s * cfg = w_cfg->content;
+		struct ll_s * w_itf = cfg->cfg_c;
+		uint8_t n_eps = 0u;
+		uint8_t n_itf = 0u;
+
+		while( w_itf != NULL ){
+
+			struct lwUSB_interface_s * itf = w_itf->content;
+			struct ll_s * w_ep = itf->itf_c;
+			while( w_ep != NULL ){
+				n_eps++;
+				w_ep = w_ep->next;
+
+			}
+			n_itf++;
+			w_itf = w_itf->next;
+		}
+		cfg->cfg_d->wTotalLength += n_itf * 9u + n_eps * 7u ;
+		n_cfg++;
+		w_cfg = w_cfg->next ;
+	}
+
+	dev.dev_d->bNumConfigurations = n_cfg;
+
+	return LWUSB_ERR_OK;
 }
 
 void tree_Init( void ){
@@ -51,8 +83,6 @@ void tree_Init( void ){
 
 	dev_h.hc = (void*)&dev;
 	dev_h.ht = e_handle_type_device;
-
-	tree_initDone++;
 
 }
 Handle tree_CreateConfigurationHandle ( struct Configuration_Inf_s * info ){
@@ -143,24 +173,6 @@ Handle tree_CreateStringHandle( struct String_Inf_s * info ){
 	H.hc = NULL;
 	H.ht = e_handle_type_invalid;
 
-	LW_ASSERT(info->str_content);
-	LW_ASSERT(info->str_id != 0u);
-	LW_ASSERT(info->str_id != 1u);
-	LW_ASSERT(info->str_id != 2u);
-	LW_ASSERT(info->str_id != 3u);
-	LW_ASSERT(info->str_length != 0u);
-	LW_ASSERT(info->str_encoding > lwUSB_String_Encoding_e_Start);
-	LW_ASSERT(info->str_encoding < lwUSB_String_Encoding_e_End);
-
-	LW_ASSERT_RETURN(info->str_content,H);
-	LW_ASSERT_RETURN(info->str_id != 0u,H);
-	LW_ASSERT_RETURN(info->str_id != 1u,H);
-	LW_ASSERT_RETURN(info->str_id != 2u,H);
-	LW_ASSERT_RETURN(info->str_id != 3u,H);
-	LW_ASSERT_RETURN(info->str_length != 0u,H);
-	LW_ASSERT_RETURN(info->str_encoding > lwUSB_String_Encoding_e_Start,H);
-	LW_ASSERT_RETURN(info->str_encoding < lwUSB_String_Encoding_e_End,H);
-
 	uint32_t tvs = sizeof(struct lwUSB_string_s);
 	uint32_t tds = sizeof(struct lwUSB_string_descriptor_s);
 
@@ -191,20 +203,6 @@ Handle tree_CreateEndpointHandle( struct EndPoint_Inf_s * info ) {
 
 	H.hc = NULL;
 	H.ht = e_handle_type_invalid;
-
-	LW_ASSERT( info->epType < e_lwUSB_EndPoint_Type_MAX );
-	LW_ASSERT( info->epDir < e_lwUSB_EndPoint_Direction_MAX );
-	LW_ASSERT( info->epAddress <= 15u );
-	LW_ASSERT( info->maxPacketSize <= 1024 );
-	LW_ASSERT( info->phyHandle.ht == e_handle_type_phy_endpoint );
-	LW_ASSERT( info->phyHandle.hc != NULL );
-
-	LW_ASSERT_RETURN( info->epType < e_lwUSB_EndPoint_Type_MAX , H );
-	LW_ASSERT_RETURN( info->epDir < e_lwUSB_EndPoint_Direction_MAX , H );
-	LW_ASSERT_RETURN( info->epAddress <= 15u , H );
-	LW_ASSERT_RETURN( info->maxPacketSize <= 1024 , H );
-	LW_ASSERT_RETURN( info->phyHandle.ht == e_handle_type_phy_endpoint , H);
-	LW_ASSERT_RETURN( info->phyHandle.hc != NULL , H);
 
 	uint32_t tvs = sizeof(struct lwUSB_EndPoint_s);
 	uint32_t tds = sizeof( struct lwUSB_endpoint_descriptor_s);
@@ -247,11 +245,8 @@ Handle tree_CreatePhyHandle( struct Phy_Inf_s * info ){
 	H.hc = NULL;
 	H.ht = e_handle_type_invalid;
 
-	LW_ASSERT(info->phy_buffSize);
-
-	LW_ASSERT_RETURN(info->phy_buffSize,H);
 	uint32_t tbs =  (1u+info->phy_isDouble)*info->phy_buffSize;
-	uint32_t tvs = sizeof(struct lwUSB_PhyEndPoint_s) + (1u+info->phy_isDouble)*(sizeof(struct RingBuffer_s));
+	uint32_t tvs = sizeof(struct lwUSB_PhyEndPoint_s) + (1u+info->phy_isDouble)*(sizeof(struct RingBuffer_s) + sizeof(struct LinearBuffer_s));
 
 	if ( VAR_PEEK(tvs)  == FALSE  ||
 		 BUFF_PEEK(tbs) == FALSE ){
@@ -261,13 +256,24 @@ Handle tree_CreatePhyHandle( struct Phy_Inf_s * info ){
 	struct lwUSB_PhyEndPoint_s * phy = NULL;
 	struct RingBuffer_s * dp0 = NULL;
 	struct RingBuffer_s * dp1 = NULL;
+	struct LinearBuffer_s * tb0 = NULL;
+	struct LinearBuffer_s * tb1 = NULL;
 	uint8_t* b0 = NULL;
 	uint8_t* b1 = NULL;
 
 	phy = (struct lwUSB_PhyEndPoint_s *)VAR_ALLOC(sizeof(struct lwUSB_PhyEndPoint_s));
 	dp0 = (struct RingBuffer_s *)VAR_ALLOC(sizeof(struct RingBuffer_s));
+	tb0 = (struct LinearBuffer_s *)VAR_ALLOC(sizeof(struct LinearBuffer_s));
+	tb1 = (struct LinearBuffer_s *)VAR_ALLOC(sizeof(struct LinearBuffer_s));
 	b0 = (uint8_t*) BUFF_ALLOC(info->phy_buffSize);
 	RingBuffer_Init(dp0, b0, info->phy_buffSize);
+
+	if ( info->phy_IN ){
+		LinearBuffer_Init(tb0, info->phy_IN, info->phy_hwbSize);
+	}
+	if ( info->phy_OUT ){
+		LinearBuffer_Init(tb0, info->phy_OUT, info->phy_hwbSize);
+	}
 	if ( info->phy_isDouble ){
 		dp1 = (struct RingBuffer_s *)VAR_ALLOC(sizeof(struct RingBuffer_s));
 		b1 = (uint8_t*) BUFF_ALLOC(info->phy_buffSize);
@@ -275,6 +281,8 @@ Handle tree_CreatePhyHandle( struct Phy_Inf_s * info ){
 	}
 	phy->dp = dp0;
 	phy->dp_r = dp1;
+	phy->lb = tb0;
+	phy->lb_r = tb1;
 	phy->ep_n = info->phy_EpNumber;
 
 	H = createHandle(e_handle_type_phy_endpoint,phy);
@@ -282,8 +290,8 @@ Handle tree_CreatePhyHandle( struct Phy_Inf_s * info ){
 	return H;
 }
 
-static lwUSB_Err registerChild( Handle child , Handle parent )
-{
+lwUSB_Err tree_registerChild( Handle child , Handle parent ){
+
 	struct parent_node_s * c_parent = (struct parent_node_s *)parent.hc;
 	void * c_child  = child.hc;
 
@@ -302,47 +310,6 @@ static lwUSB_Err registerChild( Handle child , Handle parent )
 
 }
 
-lwUSB_Err tree_RegisterEndPoint ( Handle ep , Handle itf ){
-
-	LW_ASSERT(ep.ht == e_handle_type_endpoint);
-	LW_ASSERT(ep.hc != NULL);
-
-	LW_ASSERT(itf.ht == e_handle_type_interface);
-	LW_ASSERT(itf.hc != NULL);
-
-	LW_ASSERT_RETURN(ep.ht == e_handle_type_endpoint,LWUSB_ERR_PARAM);
-	LW_ASSERT_RETURN(ep.hc != NULL,LWUSB_ERR_PARAM);
-
-	LW_ASSERT_RETURN(itf.ht == e_handle_type_interface,LWUSB_ERR_PARAM);
-	LW_ASSERT_RETURN(itf.hc != NULL,LWUSB_ERR_PARAM);
-
-	return registerChild(ep,itf) ;
-}
-
-lwUSB_Err tree_RegisterInterface ( Handle itf , Handle cfg ){
-
-	LW_ASSERT(itf.ht == e_handle_type_interface);
-	LW_ASSERT(itf.hc != NULL);
-
-	LW_ASSERT(cfg.ht == e_handle_type_configuration);
-	LW_ASSERT(cfg.hc != NULL);
-
-	LW_ASSERT_RETURN(itf.ht == e_handle_type_interface,LWUSB_ERR_PARAM);
-	LW_ASSERT_RETURN(itf.hc != NULL,LWUSB_ERR_PARAM);
-
-	LW_ASSERT_RETURN(cfg.ht == e_handle_type_configuration,LWUSB_ERR_PARAM);
-	LW_ASSERT_RETURN(cfg.hc != NULL,LWUSB_ERR_PARAM);
-
-	return registerChild(itf,cfg) ;
-}
-
-lwUSB_Err tree_RegisterConfiguration( Handle cfg ){
-
-	LW_ASSERT(cfg.ht != e_handle_type_configuration);
-	LW_ASSERT(cfg.hc != NULL);
-
-	LW_ASSERT_RETURN(cfg.ht != e_handle_type_configuration,LWUSB_ERR_PARAM);
-	LW_ASSERT_RETURN(cfg.hc != NULL,LWUSB_ERR_PARAM);
-
-	return registerChild(cfg,dev_h) ;
+Handle tree_getDev( void ){
+	return dev_h;
 }

@@ -10,4 +10,7 @@
 
 struct Event_s * getEventbyID (uint32_t evid);
 
+void Arbiter_Main( void );
+void Arbiter_Init ( void );
+
 #endif /* ARBITER_H_ */
